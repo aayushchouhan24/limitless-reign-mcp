@@ -119,9 +119,6 @@ export class DiscordMCPServer {
             content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
             isError: !result.success
           },
-          success: result.success,
-          data: result.data,
-          error: result.error,
           id
         }
       }
@@ -153,10 +150,6 @@ export class DiscordMCPServer {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
           isError: !result.success
         },
-        // Root-level fields for ChatGPT Actions compatibility
-        success: result.success,
-        data: result.data,
-        error: result.error,
         id
       }
     }
