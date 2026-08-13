@@ -67,7 +67,7 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
 
           const sessionId = `mcp_${Date.now()}_${Math.random().toString(36).substring(7)}`
           const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http'
-          const host = req.headers.host || 'localhost'
+          const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost'
           const baseUrl = `${protocol}://${host}${req.baseUrl || ''}`
 
           mcp.createSession(sessionId, apiKey)
@@ -102,7 +102,7 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
         if (req.method === 'GET') {
           const format = req.query.format
           const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http'
-          const host = req.headers.host || 'localhost'
+          const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost'
           const baseUrl = `${protocol}://${host}${req.baseUrl || ''}`
 
           if (format === 'openapi' || format === 'gpt') {
@@ -127,19 +127,33 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
 }
 
 /**
- * Next.js App Router handlers for main endpoint
- *
- * Usage: app/api/[...your-path]/route.ts
- * export const { GET, POST, OPTIONS } = nextjsHandlers(mcp)
+ * Next.js App Router handlers for main endpoint (with pre-initialized MCP)
  */
 export function nextjsHandlers(mcp: DiscordMCPServer) {
+  return createNextjsRoute(() => Promise.resolve(mcp))
+}
+
+/**
+ * Next.js App Router main route - simplest usage
+ *
+ * Usage:
+ * ```typescript
+ * // app/api/mcp/route.ts
+ * import { createNextjsRoute } from 'limitless-reign-mcp'
+ * import { getMCPServer } from '@/lib/mcp/server'
+ *
+ * export const { GET, POST, OPTIONS } = createNextjsRoute(getMCPServer)
+ * ```
+ */
+export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
   return {
     GET: async (req: Request) => {
+      const mcp = await getMcp()
       const url = new URL(req.url)
       const format = url.searchParams.get('format')
-      const host = req.headers.get('host') || 'localhost'
+      const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost'
       const protocol = req.headers.get('x-forwarded-proto') || 'https'
-      const pathname = url.pathname.replace(/\/sse\/?$/, '') // Remove /sse suffix if present
+      const pathname = url.pathname.replace(/\/sse\/?$/, '')
       const baseUrl = `${protocol}://${host}${pathname}`
 
       if (format === 'openapi' || format === 'gpt') {
@@ -149,6 +163,7 @@ export function nextjsHandlers(mcp: DiscordMCPServer) {
     },
 
     POST: async (req: Request) => {
+      const mcp = await getMcp()
       const authHeader = req.headers.get('authorization') || ''
       const url = new URL(req.url)
       const apiKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : url.searchParams.get('apiKey') || ''
@@ -162,42 +177,53 @@ export function nextjsHandlers(mcp: DiscordMCPServer) {
       }
     },
 
-    OPTIONS: async () => {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        }
-      })
-    }
+    OPTIONS: async () => new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+      }
+    })
   }
 }
 
 /**
- * Next.js App Router handlers for SSE endpoint
- *
- * Usage: app/api/[...your-path]/sse/route.ts
- * export const { GET, POST, OPTIONS } = nextjsSSEHandlers(mcp)
+ * Next.js App Router handlers for SSE endpoint (with pre-initialized MCP)
  */
 export function nextjsSSEHandlers(mcp: DiscordMCPServer) {
+  return createNextjsSSERoute(() => Promise.resolve(mcp))
+}
+
+/**
+ * Next.js App Router SSE route - simplest usage
+ *
+ * Usage:
+ * ```typescript
+ * // app/api/mcp/sse/route.ts
+ * import { createNextjsSSERoute } from 'limitless-reign-mcp'
+ * import { getMCPServer } from '@/lib/mcp/server'
+ *
+ * export const { GET, POST, OPTIONS } = createNextjsSSERoute(getMCPServer)
+ * ```
+ */
+export function createNextjsSSERoute(getMcp: () => Promise<DiscordMCPServer>) {
   return {
     GET: async (req: Request) => {
+      const mcp = await getMcp()
       const authHeader = req.headers.get('authorization') || ''
       const url = new URL(req.url)
       const apiKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : url.searchParams.get('apiKey') || ''
 
-      // Validate API key first
       const validation = await mcp.validateApiKey(apiKey)
       if (!validation.valid) {
         return Response.json({ error: validation.error || 'Unauthorized' }, { status: 401 })
       }
 
       const sessionId = `mcp_${Date.now()}_${Math.random().toString(36).substring(7)}`
-      const host = req.headers.get('host') || 'localhost'
+      const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost'
       const protocol = req.headers.get('x-forwarded-proto') || 'https'
-      const pathname = url.pathname // Keep the full path including /sse
+      const pathname = url.pathname
       const baseUrl = `${protocol}://${host}${pathname}`
 
       mcp.createSession(sessionId, apiKey)
@@ -205,7 +231,6 @@ export function nextjsSSEHandlers(mcp: DiscordMCPServer) {
       const stream = new ReadableStream({
         start(controller) {
           const encoder = new TextEncoder()
-
           controller.enqueue(encoder.encode(`event: endpoint\ndata: ${baseUrl}?sessionId=${sessionId}\n\n`))
           controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`))
 
@@ -219,9 +244,7 @@ export function nextjsSSEHandlers(mcp: DiscordMCPServer) {
             try { controller.close() } catch {}
           })
         },
-        cancel() {
-          mcp.deleteSession(sessionId)
-        }
+        cancel() { mcp.deleteSession(sessionId) }
       })
 
       return new Response(stream, {
@@ -237,10 +260,10 @@ export function nextjsSSEHandlers(mcp: DiscordMCPServer) {
     },
 
     POST: async (req: Request) => {
+      const mcp = await getMcp()
       const authHeader = req.headers.get('authorization') || ''
       const url = new URL(req.url)
       const sessionId = url.searchParams.get('sessionId')
-
       let apiKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : url.searchParams.get('apiKey') || ''
 
       if (sessionId) {
@@ -257,16 +280,14 @@ export function nextjsSSEHandlers(mcp: DiscordMCPServer) {
       }
     },
 
-    OPTIONS: async () => {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-        }
-      })
-    }
+    OPTIONS: async () => new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+      }
+    })
   }
 }
 

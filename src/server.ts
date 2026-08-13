@@ -177,16 +177,19 @@ export class DiscordMCPServer {
   }
 
   generateOpenAPISchema(baseUrl: string) {
+    // Extract base without /api/mcp for GPT Actions
+    const serverUrl = baseUrl.replace(/\/api\/mcp$/, '')
+
     return {
-      openapi: '3.1.0',
+      openapi: '3.0.3',
       info: {
         title: this.serverName,
         description: this.serverDescription,
         version: this.serverVersion
       },
-      servers: [{ url: baseUrl }],
+      servers: [{ url: serverUrl }],
       paths: {
-        '/': {
+        '/api/mcp': {
           post: {
             operationId: 'executeDiscordTool',
             summary: 'Execute Discord Tool',
@@ -204,10 +207,12 @@ export class DiscordMCPServer {
                       },
                       arguments: {
                         type: 'object',
-                        description: 'Key-value object of tool arguments'
+                        description: 'Key-value object of tool arguments',
+                        additionalProperties: true
                       }
                     },
-                    required: ['name']
+                    required: ['name'],
+                    additionalProperties: false
                   }
                 }
               }
@@ -220,9 +225,10 @@ export class DiscordMCPServer {
                     schema: {
                       type: 'object',
                       properties: {
-                        success: { type: 'boolean' },
-                        data: { type: 'object' },
-                        error: { type: 'object' }
+                        jsonrpc: { type: 'string' },
+                        result: { type: 'object' },
+                        error: { type: 'object' },
+                        id: { type: 'string' }
                       }
                     }
                   }
@@ -234,11 +240,10 @@ export class DiscordMCPServer {
       },
       components: {
         securitySchemes: {
-          bearerAuth: { type: 'http', scheme: 'bearer' },
-          apiKeyQuery: { type: 'apiKey', in: 'query', name: 'apiKey' }
+          bearerAuth: { type: 'http', scheme: 'bearer' }
         }
       },
-      security: [{ bearerAuth: [] }, { apiKeyQuery: [] }]
+      security: [{ bearerAuth: [] }]
     }
   }
 }

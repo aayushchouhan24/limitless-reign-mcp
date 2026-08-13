@@ -370,12 +370,13 @@ Paste in Custom GPT → Configure → Actions
 
 ## 💻 SDK Usage
 
-For custom integrations:
+Works with **any** backend framework. Just create the MCP server and mount it.
+
+### Core Setup (All Frameworks)
 
 ```typescript
 import { Client, GatewayIntentBits } from 'discord.js'
-import { createMCPServer, expressMiddleware } from 'limitless-reign'
-import express from 'express'
+import { createMCPServer } from 'limitless-reign-mcp'
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
@@ -388,17 +389,213 @@ const mcp = createMCPServer({
     return { valid: true, userId: 'user-id' }
   },
   getAllowedGuilds: async (apiKey) => {
-    // Return user's accessible guilds
     return [{ id: '123', name: 'My Server', icon: null }]
   }
 })
+
+await client.login(process.env.DISCORD_TOKEN)
+```
+
+---
+
+### Express
+
+```typescript
+import express from 'express'
+import { expressMiddleware } from 'limitless-reign-mcp'
 
 const app = express()
 app.use(express.json())
 app.use('/mcp', expressMiddleware(mcp))
 
-client.login(process.env.DISCORD_TOKEN)
 app.listen(3000)
+```
+
+---
+
+### Next.js (App Router)
+
+```typescript
+// lib/mcp.ts
+import { createMCPServer } from 'limitless-reign-mcp'
+
+let mcp: ReturnType<typeof createMCPServer>
+
+export async function getMCP() {
+  if (!mcp) {
+    // ... setup client
+    mcp = createMCPServer({ client, validateAccess, getAllowedGuilds })
+  }
+  return mcp
+}
+```
+
+```typescript
+// app/api/mcp/route.ts
+import { createNextjsRoute } from 'limitless-reign-mcp'
+import { getMCP } from '@/lib/mcp'
+
+export const { GET, POST, OPTIONS } = createNextjsRoute(getMCP)
+```
+
+```typescript
+// app/api/mcp/sse/route.ts
+import { createNextjsSSERoute } from 'limitless-reign-mcp'
+import { getMCP } from '@/lib/mcp'
+
+export const { GET, POST, OPTIONS } = createNextjsSSERoute(getMCP)
+```
+
+---
+
+### Fastify
+
+```typescript
+import Fastify from 'fastify'
+import { handleHTTPRequest } from 'limitless-reign-mcp'
+
+const app = Fastify()
+
+app.all('/mcp', async (req, reply) => {
+  const result = await handleHTTPRequest(mcp, {
+    method: req.method,
+    url: req.url,
+    headers: req.headers as Record<string, string>,
+    body: req.body,
+    basePath: '/mcp'
+  })
+  reply.status(result.status).send(result.body)
+})
+
+app.listen({ port: 3000 })
+```
+
+---
+
+### Hono
+
+```typescript
+import { Hono } from 'hono'
+import { handleHTTPRequest } from 'limitless-reign-mcp'
+
+const app = new Hono()
+
+app.all('/mcp', async (c) => {
+  const result = await handleHTTPRequest(mcp, {
+    method: c.req.method,
+    url: c.req.url,
+    headers: Object.fromEntries(c.req.raw.headers),
+    body: await c.req.json().catch(() => null),
+    basePath: '/mcp'
+  })
+  return c.json(result.body, result.status)
+})
+
+export default app
+```
+
+---
+
+### Koa
+
+```typescript
+import Koa from 'koa'
+import Router from '@koa/router'
+import bodyParser from 'koa-bodyparser'
+import { handleHTTPRequest } from 'limitless-reign-mcp'
+
+const app = new Koa()
+const router = new Router()
+
+router.all('/mcp', async (ctx) => {
+  const result = await handleHTTPRequest(mcp, {
+    method: ctx.method,
+    url: ctx.href,
+    headers: ctx.headers as Record<string, string>,
+    body: ctx.request.body,
+    basePath: '/mcp'
+  })
+  ctx.status = result.status
+  ctx.body = result.body
+})
+
+app.use(bodyParser())
+app.use(router.routes())
+app.listen(3000)
+```
+
+---
+
+### Bun
+
+```typescript
+import { handleHTTPRequest } from 'limitless-reign-mcp'
+
+Bun.serve({
+  port: 3000,
+  async fetch(req) {
+    const url = new URL(req.url)
+    if (url.pathname.startsWith('/mcp')) {
+      const result = await handleHTTPRequest(mcp, {
+        method: req.method,
+        url: req.url,
+        headers: Object.fromEntries(req.headers),
+        body: await req.json().catch(() => null),
+        basePath: '/mcp'
+      })
+      return Response.json(result.body, { status: result.status })
+    }
+    return new Response('Not found', { status: 404 })
+  }
+})
+```
+
+---
+
+### Deno
+
+```typescript
+import { handleHTTPRequest } from 'npm:limitless-reign-mcp'
+
+Deno.serve({ port: 3000 }, async (req) => {
+  const url = new URL(req.url)
+  if (url.pathname.startsWith('/mcp')) {
+    const result = await handleHTTPRequest(mcp, {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers),
+      body: await req.json().catch(() => null),
+      basePath: '/mcp'
+    })
+    return Response.json(result.body, { status: result.status })
+  }
+  return new Response('Not found', { status: 404 })
+})
+```
+
+---
+
+### Node.js HTTP (No Framework)
+
+```typescript
+import http from 'http'
+import { handleHTTPRequest } from 'limitless-reign-mcp'
+
+http.createServer(async (req, res) => {
+  let body = ''
+  for await (const chunk of req) body += chunk
+  
+  const result = await handleHTTPRequest(mcp, {
+    method: req.method!,
+    url: `http://localhost:3000${req.url}`,
+    headers: req.headers as Record<string, string>,
+    body: body ? JSON.parse(body) : null,
+    basePath: '/mcp'
+  })
+  
+  res.writeHead(result.status, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(result.body))
+}).listen(3000)
 ```
 
 ---
