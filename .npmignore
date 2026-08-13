@@ -1,0 +1,28 @@
+# Source files (dist is published)
+src/
+
+# TypeScript config
+tsconfig.json
+
+# Development files
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+coverage/
+
+# Node modules (handled by npm)
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

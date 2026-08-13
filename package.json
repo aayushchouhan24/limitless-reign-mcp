@@ -1,0 +1,78 @@
+{
+  "name": "limitless-reign-mcp",
+  "version": "1.0.0",
+  "description": "Turn any Discord.js bot into a full MCP server with 100+ tools. Supports Claude, ChatGPT, Cursor, Windsurf, and all MCP-compatible AI clients.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AayushChouhan/limitless-reign-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AayushChouhan/limitless-reign-mcp/issues"
+  },
+  "homepage": "https://github.com/AayushChouhan/limitless-reign-mcp#readme",
+  "keywords": [
+    "discord",
+    "discord.js",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "bot",
+    "claude",
+    "chatgpt",
+    "gpt",
+    "cursor",
+    "windsurf",
+    "anthropic",
+    "openai",
+    "llm",
+    "api",
+    "sdk",
+    "server",
+    "sse",
+    "json-rpc",
+    "limitless-reign",
+    "discord-bot",
+    "ai-tools"
+  ],
+  "author": {
+    "name": "Aayush Chouhan",
+    "url": "https://github.com/AayushChouhan"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "discord.js": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "discord.js": "^14.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
