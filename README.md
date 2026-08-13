@@ -5,7 +5,7 @@
 <p align="center">
   <img src="https://img.shields.io/npm/v/limitless-reign-mcp?style=for-the-badge&color=5865F2" alt="npm" />
   <img src="https://img.shields.io/npm/dm/limitless-reign-mcp?style=for-the-badge&color=57F287" alt="downloads" />
-  <img src="https://img.shields.io/github/stars/AayushChouhan/limitless-reign-mcp?style=for-the-badge&color=FEE75C" alt="stars" />
+  <img src="https://img.shields.io/github/stars/aayushchouhan2424/limitless-reign-mcp?style=for-the-badge&color=FEE75C" alt="stars" />
   <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge" alt="discord.js" />
 </p>
 
@@ -18,7 +18,7 @@
   <a href="#-what-ai-can-do">Features</a> •
   <a href="#-all-116-tools">All Tools</a> •
   <a href="#-connect-any-ai">Connect AI</a> •
-  <a href="https://github.com/AayushChouhan/limitless-reign-mcp/issues">Support</a>
+  <a href="https://github.com/aayushchouhan24/limitless-reign-mcp/issues">Support</a>
 </p>
 
 ---
@@ -439,10 +439,10 @@ validateAccess: async (apiKey, guildId) => {
 
 ## 🔗 Links
 
-- **GitHub:** [github.com/AayushChouhan/limitless-reign-mcp](https://github.com/AayushChouhan/limitless-reign-mcp)
+- **GitHub:** [github.com/aayushchouhan24/limitless-reign-mcp](https://github.com/aayushchouhan24/limitless-reign-mcp)
 - **npm:** [npmjs.com/package/limitless-reign-mcp](https://npmjs.com/package/limitless-reign-mcp)
-- **Issues:** [Report bugs](https://github.com/AayushChouhan/limitless-reign-mcp/issues)
-- **Limitless Reign App:** [github.com/AayushChouhan/limitless-reign](https://github.com/AayushChouhan/limitless-reign)
+- **Issues:** [Report bugs](https://github.com/aayushchouhan24/limitless-reign-mcp/issues)
+- **Limitless Reign App:** [github.com/aayushchouhan24/limitless-reign](https://github.com/aayushchouhan24/limitless-reign)
 
 ---
 
@@ -450,18 +450,53 @@ validateAccess: async (apiKey, guildId) => {
 
 If this helped you, give it a star! It helps others find it.
 
-[![Star](https://img.shields.io/github/stars/AayushChouhan/limitless-reign-mcp?style=social)](https://github.com/AayushChouhan/limitless-reign-mcp)
+[![Star](https://img.shields.io/github/stars/aayushchouhan24/limitless-reign-mcp?style=social)](https://github.com/aayushchouhan24/limitless-reign-mcp)
+
+---
+
+## 🌟 Author
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/aayushchouhan24">
+        <img src="https://gravatar.com/userimage/226260988/f5429ad9b09c533449dab984eb05cdbf.jpeg?size=256" width="100px;" alt="Aayush Chouhan" style="border-radius: 50%;" />
+        <br />
+        <sub><b>Aayush Chouhan</b></sub>
+      </a>
+      <br />
+      <a href="https://www.instagram.com/aayushchouhan_24/" title="Instagram"><img src="https://img.shields.io/badge/-Instagram-E4405F?style=flat-square&logo=instagram&logoColor=white" /></a>
+      <a href="https://www.linkedin.com/in/aayushchouhan24/" title="LinkedIn"><img src="https://img.shields.io/badge/-LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" /></a>
+      <a href="https://github.com/aayushchouhan24" title="GitHub"><img src="https://img.shields.io/badge/-GitHub-181717?style=flat-square&logo=github&logoColor=white" /></a>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-MIT - Use it however you want.
+MIT © [Aayush Chouhan](https://github.com/aayushchouhan24)
 
 ---
 
 <p align="center">
-  <strong>Built by <a href="https://github.com/AayushChouhan">Aayush Chouhan</a></strong>
+  Built with ❤️ using
+  <a href="https://discord.js.org/">Discord.js</a> •
+  <a href="https://nodejs.org/">Node.js</a> •
+  <a href="https://www.typescriptlang.org/">TypeScript</a>
 </p>
 
 <!-- SEO: discord mcp, discord ai bot, discord chatgpt, discord claude, ai discord server management, discord bot ai control, model context protocol discord, discord.js mcp server, discord automation ai, chatgpt discord plugin, claude discord integration, discord api ai tools, limitless reign, discord mcp server, ai powered discord bot -->

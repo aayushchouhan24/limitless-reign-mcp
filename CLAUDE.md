@@ -43,5 +43,5 @@ Once connected, ask Claude to:
 
 ## Need Help?
 
-- GitHub: https://github.com/AayushChouhan/limitless-reign-mcp
-- Issues: https://github.com/AayushChouhan/limitless-reign-mcp/issues
+- GitHub: https://github.com/aayushchouhan24/limitless-reign-mcp
+- Issues: https://github.com/aayushchouhan24/limitless-reign-mcp/issues

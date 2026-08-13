@@ -27,19 +27,19 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "start": "node dist/cli.js",
     "prepublishOnly": "npm run clean && npm run build",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AayushChouhan/limitless-reign-mcp.git"
+    "url": "git+https://github.com/aayushchouhan24/limitless-reign-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/AayushChouhan/limitless-reign-mcp/issues"
+    "url": "https://github.com/aayushchouhan24/limitless-reign-mcp/issues"
   },
-  "homepage": "https://github.com/AayushChouhan/limitless-reign-mcp#readme",
+  "homepage": "https://github.com/aayushchouhan24/limitless-reign-mcp#readme",
   "keywords": [
     "discord",
     "discord.js",
@@ -79,7 +79,7 @@
   ],
   "author": {
     "name": "Aayush Chouhan",
-    "url": "https://github.com/AayushChouhan"
+    "url": "https://github.com/aayushchouhan24"
   },
   "license": "MIT",
   "dependencies": {
