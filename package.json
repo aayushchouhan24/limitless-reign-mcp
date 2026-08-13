@@ -4,6 +4,10 @@
   "description": "Turn any Discord.js bot into a full MCP server with 100+ tools. Supports Claude, ChatGPT, Cursor, Windsurf, and all MCP-compatible AI clients.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "limitless-reign-mcp": "./dist/cli.js",
+    "discord-mcp": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,6 +17,9 @@
   },
   "files": [
     "dist",
+    ".claude",
+    "CLAUDE.md",
+    "AGENTS.md",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -21,6 +28,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
+    "start": "node dist/cli.js",
     "prepublishOnly": "npm run clean && npm run build",
     "test": "echo \"No tests yet\" && exit 0"
   },
@@ -66,19 +74,19 @@
     "sdk",
     "api",
     "sse",
-    "json-rpc"
+    "json-rpc",
+    "cli"
   ],
   "author": {
     "name": "Aayush Chouhan",
     "url": "https://github.com/AayushChouhan"
   },
   "license": "MIT",
-  "peerDependencies": {
+  "dependencies": {
     "discord.js": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "discord.js": "^14.0.0",
     "typescript": "^5.0.0"
   },
   "engines": {
