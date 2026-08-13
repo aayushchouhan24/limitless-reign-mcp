@@ -14,16 +14,16 @@ const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : 3000
 if (!token) {
   console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
-║                    limitless-reign-mcp                        ║
+║                    limitless-reign                        ║
 ║           Discord MCP Server - AI Control for Discord         ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 Usage:
-  npx limitless-reign-mcp --token YOUR_BOT_TOKEN
-  npx limitless-reign-mcp --token YOUR_BOT_TOKEN --port 3001
+  npx limitless-reign --token YOUR_BOT_TOKEN
+  npx limitless-reign --token YOUR_BOT_TOKEN --port 3001
 
 Or set environment variable:
-  DISCORD_TOKEN=your_token npx limitless-reign-mcp
+  DISCORD_TOKEN=your_token npx limitless-reign
 
 Options:
   --token    Discord bot token (required)
@@ -43,7 +43,7 @@ Then add to Claude Desktop config:
 
 console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
-║                    limitless-reign-mcp                        ║
+║                    limitless-reign                        ║
 ║           Discord MCP Server - AI Control for Discord         ║
 ╚═══════════════════════════════════════════════════════════════╝
 `)

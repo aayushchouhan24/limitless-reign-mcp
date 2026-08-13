@@ -4,11 +4,11 @@ Control any Discord server with AI. 100+ tools included.
 
 ## Quick Start
 
-Type `/limitless-reign-mcp` and paste your bot token. Done.
+Type `/limitless-reign` and paste your bot token. Done.
 
 Or run manually:
 ```bash
-npx limitless-reign-mcp --token YOUR_BOT_TOKEN
+npx limitless-reign --token YOUR_BOT_TOKEN
 ```
 
 ## What You Can Do

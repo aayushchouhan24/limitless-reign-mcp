@@ -6,7 +6,7 @@ This package lets AI agents control Discord bots with 100+ tools.
 
 To enable Discord control, run:
 ```bash
-npx limitless-reign-mcp --token DISCORD_BOT_TOKEN
+npx limitless-reign --token DISCORD_BOT_TOKEN
 ```
 
 This starts an MCP server on `http://localhost:3000` with full Discord API access.
@@ -50,5 +50,5 @@ Once running, the agent can:
 
 Never commit bot tokens. Use environment variables:
 ```bash
-DISCORD_TOKEN=xxx npx limitless-reign-mcp
+DISCORD_TOKEN=xxx npx limitless-reign
 ```

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial release
-- **CLI Tool** - Run with `npx limitless-reign-mcp --token YOUR_TOKEN`
+- **CLI Tool** - Run with `npx limitless-reign --token YOUR_TOKEN`
 - 95 Discord tool handlers covering full Discord.js v14 API
 - 116 MCP tool definitions with complete schemas
 - HTTP POST endpoint for JSON-RPC and GPT Actions

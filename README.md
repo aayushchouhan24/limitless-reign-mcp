@@ -5,7 +5,7 @@
 <p align="center">
   <img src="https://img.shields.io/npm/v/limitless-reign-mcp?style=for-the-badge&color=5865F2" alt="npm" />
   <img src="https://img.shields.io/npm/dm/limitless-reign-mcp?style=for-the-badge&color=57F287" alt="downloads" />
-  <img src="https://img.shields.io/github/stars/aayushchouhan2424/limitless-reign-mcp?style=for-the-badge&color=FEE75C" alt="stars" />
+  <img src="https://img.shields.io/github/stars/aayushchouhan24/limitless-reign?style=for-the-badge&color=FEE75C" alt="stars" />
   <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge" alt="discord.js" />
 </p>
 
@@ -48,7 +48,7 @@ AI:   ✓ Created #rules, #announcements, #general
 ## 🚀 One Command Setup
 
 ```bash
-npx limitless-reign-mcp --token YOUR_BOT_TOKEN
+npx limitless-reign --token YOUR_BOT_TOKEN
 ```
 
 **That's it.** Server runs at `http://localhost:3000`. Connect your AI and go.
@@ -337,7 +337,7 @@ Install package and use the skill:
 ```bash
 npm install limitless-reign-mcp
 ```
-Then type `/limitless-reign-mcp` in Claude Code.
+Then type `/limitless-reign` in Claude Code.
 
 ### ChatGPT
 
@@ -374,7 +374,7 @@ For custom integrations:
 
 ```typescript
 import { Client, GatewayIntentBits } from 'discord.js'
-import { createMCPServer, expressMiddleware } from 'limitless-reign-mcp'
+import { createMCPServer, expressMiddleware } from 'limitless-reign'
 import express from 'express'
 
 const client = new Client({
@@ -429,7 +429,7 @@ validateAccess: async (apiKey, guildId) => {
 
 | File | Purpose |
 |------|---------|
-| `dist/cli.js` | CLI - `npx limitless-reign-mcp` |
+| `dist/cli.js` | CLI - `npx limitless-reign` |
 | `dist/index.js` | SDK exports |
 | `.claude/skills/` | Claude Code skill |
 | `CLAUDE.md` | AI instructions |
@@ -442,7 +442,7 @@ validateAccess: async (apiKey, guildId) => {
 - **GitHub:** [github.com/aayushchouhan24/limitless-reign-mcp](https://github.com/aayushchouhan24/limitless-reign-mcp)
 - **npm:** [npmjs.com/package/limitless-reign-mcp](https://npmjs.com/package/limitless-reign-mcp)
 - **Issues:** [Report bugs](https://github.com/aayushchouhan24/limitless-reign-mcp/issues)
-- **Limitless Reign App:** [github.com/aayushchouhan24/limitless-reign](https://github.com/aayushchouhan24/limitless-reign)
+- **Limitless Reign App:** [github.com/aayushchouhan24/limitless-reign-mcp](https://github.com/aayushchouhan24/limitless-reign-mcp)
 
 ---
 
@@ -450,7 +450,7 @@ validateAccess: async (apiKey, guildId) => {
 
 If this helped you, give it a star! It helps others find it.
 
-[![Star](https://img.shields.io/github/stars/aayushchouhan24/limitless-reign-mcp?style=social)](https://github.com/aayushchouhan24/limitless-reign-mcp)
+[![Star](https://img.shields.io/github/stars/aayushchouhan24/limitless-reign?style=social)](https://github.com/aayushchouhan24/limitless-reign-mcp)
 
 ---
 

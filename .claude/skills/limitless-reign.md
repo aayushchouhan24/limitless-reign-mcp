@@ -1,9 +1,9 @@
 ---
-name: limitless-reign-mcp
+name: limitless-reign
 description: Control Discord with AI - 100+ tools for messages, channels, moderation, roles, webhooks, automod, events, and more
 ---
 
-# Limitless Reign MCP - Discord AI Control
+# Limitless Reign - Discord AI Control
 
 ## Step 1: Get Bot Token
 
@@ -22,7 +22,7 @@ Paste your Discord bot token:"
 
 Once user provides token, run in background:
 ```bash
-npx limitless-reign-mcp --token {TOKEN} --port 3847 &
+npx limitless-reign --token {TOKEN} --port 3847 &
 ```
 
 Wait 5 seconds.
@@ -60,4 +60,4 @@ If failed:
 2. Bot is added to at least one server
 3. Bot has Administrator permission
 
-Run `/limitless-reign-mcp` to try again."
+Run `/limitless-reign` to try again."
