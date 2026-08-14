@@ -600,6 +600,177 @@ http.createServer(async (req, res) => {
 
 ---
 
+## 🧩 Adding Custom & External Tools
+
+Limitless Reign MCP is fully extensible. You can add custom tools, external HTTP REST APIs, bridge remote MCP servers, and write modular plugins using 6 different methods:
+
+### 1. Server Configuration (`customTools` option)
+
+Pass custom tools directly when creating your server:
+
+```typescript
+import { createMCPServer } from 'limitless-reign-mcp'
+
+const mcp = createMCPServer({
+  client,
+  validateAccess: async (key) => ({ valid: true }),
+  customTools: [
+    {
+      name: 'calculate_stats',
+      description: 'Compute server analytics score',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          multiplier: { type: 'number', description: 'Score multiplier' }
+        },
+        required: ['multiplier']
+      },
+      handler: async (args, { client, database }) => {
+        const memberCount = client.guilds.cache.reduce((acc, g) => acc + g.memberCount, 0)
+        return { totalMembers: memberCount, score: memberCount * args.multiplier }
+      }
+    }
+  ]
+})
+```
+
+---
+
+### 2. Runtime Registration (`mcp.registerTool` & `mcp.registerTools`)
+
+Register or unregister custom tools dynamically at any point:
+
+```typescript
+import { defineTool } from 'limitless-reign-mcp'
+
+// Register a single custom tool
+mcp.registerTool(
+  defineTool({
+    name: 'custom_send_alert',
+    description: 'Send high priority alert to moderator channel',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        channelId: { type: 'string' },
+        alertMessage: { type: 'string' }
+      },
+      required: ['channelId', 'alertMessage']
+    },
+    handler: async (args, { client }) => {
+      const channel = await client.channels.fetch(args.channelId)
+      if (channel?.isTextBased()) {
+        await channel.send(`🚨 **ALERT:** ${args.alertMessage}`)
+        return { success: true, delivered: true }
+      }
+      return { success: false, error: 'Channel is not text-based' }
+    }
+  })
+)
+
+// Check or unregister tools
+mcp.hasTool('custom_send_alert') // true
+mcp.unregisterTool('custom_send_alert')
+```
+
+---
+
+### 3. External HTTP / REST API Tools (`createHttpTool`)
+
+Turn any REST API endpoint or Webhook into an MCP tool with schema validation and authentication:
+
+```typescript
+import { createHttpTool } from 'limitless-reign-mcp'
+
+const weatherTool = createHttpTool({
+  name: 'get_weather_report',
+  description: 'Fetch current weather for a city',
+  url: (args) => `https://api.weatherapi.com/v1/current.json?q=${encodeURIComponent(args.city)}&key=YOUR_API_KEY`,
+  method: 'GET',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      city: { type: 'string', description: 'City name' }
+    },
+    required: ['city']
+  },
+  transformResponse: (data) => ({
+    city: data.location?.name,
+    temp_c: data.current?.temp_c,
+    condition: data.current?.condition?.text
+  })
+})
+
+mcp.registerTool(weatherTool)
+```
+
+---
+
+### 4. Bridge & Proxy External MCP Servers (`registerExternalMCP`)
+
+Seamlessly connect remote MCP servers (such as GitHub MCP, Database MCP, or Web Search MCP) and merge their tools into your Discord MCP catalog:
+
+```typescript
+// Proxy an external MCP server over HTTP/SSE
+await mcp.registerExternalMCP({
+  url: 'http://localhost:8080/mcp',
+  prefix: 'ext_', // Optional prefix to avoid tool name clashes
+  headers: {
+    'Authorization': 'Bearer YOUR_REMOTE_TOKEN'
+  },
+  filterTools: (toolName) => !toolName.startsWith('dangerous_')
+})
+```
+
+---
+
+### 5. Modular Plugins (`mcp.use`)
+
+Package and organize custom tools into reusable plugins:
+
+```typescript
+import type { DiscordMCPServer } from 'limitless-reign-mcp'
+
+function moderationPlugin(server: DiscordMCPServer) {
+  server.registerTool({
+    name: 'auto_quarantine_user',
+    description: 'Move user to isolated quarantine role',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        guildId: { type: 'string' },
+        userId: { type: 'string' }
+      },
+      required: ['guildId', 'userId']
+    },
+    handler: async (args, { client }) => {
+      // Your custom quarantine logic
+      return { quarantined: true, userId: args.userId }
+    }
+  })
+}
+
+mcp.use(moderationPlugin)
+```
+
+---
+
+### 6. CLI Dynamic Loading (`--tools`, `--plugin`, `--external-mcp`)
+
+When using the standalone CLI, pass custom tools, plugins, or external MCP servers via command line flags or environment variables:
+
+```bash
+# Load custom tools file
+npx limitless-reign --token YOUR_BOT_TOKEN --tools ./my-tools.js
+
+# Load a plugin
+npx limitless-reign --token YOUR_BOT_TOKEN --plugin ./my-plugin.js
+
+# Proxy a remote MCP server
+npx limitless-reign --token YOUR_BOT_TOKEN --external-mcp http://localhost:8000/mcp
+```
+
+---
+
 ## 🛡️ Access Control
 
 Built-in permission system:

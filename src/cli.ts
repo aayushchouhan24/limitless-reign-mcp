@@ -3,13 +3,21 @@
 import { Client, GatewayIntentBits } from 'discord.js'
 import { createMCPServer } from './index'
 import * as http from 'http'
+import * as path from 'path'
+import * as fs from 'fs'
 
 const args = process.argv.slice(2)
 const tokenIndex = args.indexOf('--token')
 const portIndex = args.indexOf('--port')
+const toolsIndex = args.indexOf('--tools')
+const pluginIndex = args.indexOf('--plugin')
+const externalMcpIndex = args.indexOf('--external-mcp')
 
 const token = tokenIndex !== -1 ? args[tokenIndex + 1] : process.env.DISCORD_TOKEN
-const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : 3000
+const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : (process.env.PORT ? parseInt(process.env.PORT) : 3000)
+const toolsPath = toolsIndex !== -1 ? args[toolsIndex + 1] : process.env.CUSTOM_TOOLS_PATH
+const pluginPath = pluginIndex !== -1 ? args[pluginIndex + 1] : process.env.PLUGIN_PATH
+const externalMcpUrl = externalMcpIndex !== -1 ? args[externalMcpIndex + 1] : process.env.EXTERNAL_MCP_URL
 
 if (!token) {
   console.log(`
@@ -21,13 +29,19 @@ if (!token) {
 Usage:
   npx limitless-reign --token YOUR_BOT_TOKEN
   npx limitless-reign --token YOUR_BOT_TOKEN --port 3001
+  npx limitless-reign --token YOUR_BOT_TOKEN --tools ./my-tools.js
+  npx limitless-reign --token YOUR_BOT_TOKEN --plugin ./my-plugin.js
+  npx limitless-reign --token YOUR_BOT_TOKEN --external-mcp http://localhost:8000/mcp
 
-Or set environment variable:
+Or set environment variables:
   DISCORD_TOKEN=your_token npx limitless-reign
 
 Options:
-  --token    Discord bot token (required)
-  --port     Server port (default: 3000)
+  --token         Discord bot token (required)
+  --port          Server port (default: 3000)
+  --tools         Path to JS/TS file exporting custom tools array
+  --plugin        Path to JS/TS file exporting an MCP plugin function
+  --external-mcp  URL of an external MCP server to proxy
 
 Then add to Claude Desktop config:
   {
@@ -78,6 +92,59 @@ const mcp = createMCPServer({
   serverName: 'Discord MCP (CLI)',
   serverVersion: '1.0.0'
 })
+
+// Load custom tools if specified
+if (toolsPath) {
+  try {
+    const fullPath = path.resolve(process.cwd(), toolsPath)
+    if (fs.existsSync(fullPath)) {
+      const loaded = require(fullPath)
+      const toolsToRegister = loaded.default || loaded.tools || loaded
+      if (Array.isArray(toolsToRegister)) {
+        mcp.registerTools(toolsToRegister)
+        console.log(`✓ Loaded ${toolsToRegister.length} custom tool(s) from ${toolsPath}`)
+      } else if (toolsToRegister && typeof toolsToRegister === 'object') {
+        mcp.registerTool(toolsToRegister)
+        console.log(`✓ Loaded custom tool "${toolsToRegister.name}" from ${toolsPath}`)
+      }
+    } else {
+      console.warn(`! Warning: Tools file not found at ${fullPath}`)
+    }
+  } catch (err: any) {
+    console.error(`! Failed to load custom tools from ${toolsPath}:`, err.message)
+  }
+}
+
+// Load plugin if specified
+if (pluginPath) {
+  try {
+    const fullPath = path.resolve(process.cwd(), pluginPath)
+    if (fs.existsSync(fullPath)) {
+      const loaded = require(fullPath)
+      const pluginFn = loaded.default || loaded.plugin || loaded
+      if (typeof pluginFn === 'function') {
+        mcp.use(pluginFn)
+        console.log(`✓ Applied MCP plugin from ${pluginPath}`)
+      }
+    } else {
+      console.warn(`! Warning: Plugin file not found at ${fullPath}`)
+    }
+  } catch (err: any) {
+    console.error(`! Failed to load plugin from ${pluginPath}:`, err.message)
+  }
+}
+
+// Load external MCP server if specified
+if (externalMcpUrl) {
+  mcp.registerExternalMCP({ url: externalMcpUrl })
+    .then((proxied) => {
+      console.log(`✓ Proxied ${proxied.length} tools from external MCP server: ${externalMcpUrl}`)
+    })
+    .catch((err) => {
+      console.warn(`! Warning: Could not connect to external MCP at ${externalMcpUrl}: ${err.message}`)
+    })
+}
+
 
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')

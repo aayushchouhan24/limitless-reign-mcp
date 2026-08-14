@@ -1,7 +1,17 @@
 import type { Client } from 'discord.js'
-import type { MCPServerOptions, ValidateResult, DatabaseHandlers } from './types'
-import { tools } from './tools'
+import type {
+  MCPServerOptions,
+  ValidateResult,
+  DatabaseHandlers,
+  CustomTool,
+  CustomToolHandler,
+  ToolDefinition,
+  ExternalMCPServerConfig,
+  MCPPlugin
+} from './types'
+import { tools as builtInTools } from './tools'
 import { handleToolCall, extractGuildId } from './handlers'
+import { defineTool, proxyExternalMCPServer } from './external'
 
 export class DiscordMCPServer {
   private client: Client
@@ -10,6 +20,7 @@ export class DiscordMCPServer {
   private onToolCall?: MCPServerOptions['onToolCall']
   private database?: DatabaseHandlers
   private sessions: Map<string, { apiKey: string }> = new Map()
+  private customTools: Map<string, CustomTool> = new Map()
 
   // Customizable server info
   public serverName: string
@@ -25,6 +36,27 @@ export class DiscordMCPServer {
     this.serverName = options.serverName || 'Discord MCP Server'
     this.serverVersion = options.serverVersion || '1.0.0'
     this.serverDescription = options.serverDescription || 'Discord bot with MCP support - 100+ tools'
+
+    // Register initial custom tools if provided
+    if (options.customTools && Array.isArray(options.customTools)) {
+      this.registerTools(options.customTools)
+    }
+
+    // Register initial plugins if provided
+    if (options.plugins && Array.isArray(options.plugins)) {
+      for (const plugin of options.plugins) {
+        this.use(plugin)
+      }
+    }
+
+    // Register initial external servers if provided
+    if (options.externalServers && Array.isArray(options.externalServers)) {
+      for (const serverConfig of options.externalServers) {
+        this.registerExternalMCP(serverConfig).catch((err) => {
+          console.error(`Failed to register external MCP server ${serverConfig.url}:`, err)
+        })
+      }
+    }
   }
 
   // Session management for SSE
@@ -45,8 +77,104 @@ export class DiscordMCPServer {
     return this.validateAccess(apiKey, null)
   }
 
-  getTools() {
+  /**
+   * Register a single custom tool or tool definition with handler
+   */
+  registerTool(
+    toolOrDef: CustomTool | ToolDefinition,
+    handler?: CustomToolHandler,
+    options?: Partial<CustomTool>
+  ): this {
+    const customTool = defineTool(toolOrDef, handler, options)
+    this.customTools.set(customTool.name, customTool)
+    return this
+  }
+
+  /**
+   * Register multiple custom tools at once
+   */
+  registerTools(toolsList: (CustomTool | (ToolDefinition & { handler: CustomToolHandler }))[]): this {
+    for (const tool of toolsList) {
+      if ('handler' in tool && typeof tool.handler === 'function') {
+        const customTool = defineTool(tool as any)
+        this.customTools.set(customTool.name, customTool)
+      }
+    }
+    return this
+  }
+
+  /**
+   * Remove a custom tool by name
+   */
+  unregisterTool(name: string): boolean {
+    return this.customTools.delete(name)
+  }
+
+  /**
+   * Check if a tool exists (either built-in or custom)
+   */
+  hasTool(name: string): boolean {
+    return this.customTools.has(name) || builtInTools.some(t => t.name === name)
+  }
+
+  /**
+   * Get tool definition by name
+   */
+  getTool(name: string): ToolDefinition | undefined {
+    const custom = this.customTools.get(name)
+    if (custom) {
+      return {
+        name: custom.name,
+        description: custom.description,
+        inputSchema: (custom.inputSchema as any) || { type: 'object', properties: {}, required: [] }
+      }
+    }
+    return builtInTools.find(t => t.name === name)
+  }
+
+  /**
+   * Get registered custom tool object
+   */
+  getCustomTool(name: string): CustomTool | undefined {
+    return this.customTools.get(name)
+  }
+
+  /**
+   * Connect and proxy an external MCP server into this server's tool catalog
+   */
+  async registerExternalMCP(config: ExternalMCPServerConfig): Promise<CustomTool[]> {
+    const tools = await proxyExternalMCPServer(config)
+    this.registerTools(tools)
     return tools
+  }
+
+  /**
+   * Apply a plugin function to extend this MCP server
+   */
+  use(plugin: MCPPlugin): this {
+    try {
+      const res = plugin(this)
+      if (res && typeof (res as any).catch === 'function') {
+        (res as Promise<void>).catch((err) => {
+          console.error('Error executing MCP plugin:', err)
+        })
+      }
+    } catch (err) {
+      console.error('Error executing MCP plugin:', err)
+    }
+    return this
+  }
+
+  /**
+   * Get all tools (built-in Discord tools + registered custom/external tools)
+   */
+  getTools(): ToolDefinition[] {
+    const customDefs: ToolDefinition[] = Array.from(this.customTools.values()).map(t => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: (t.inputSchema as any) || { type: 'object', properties: {}, required: [] }
+    }))
+    return [...builtInTools, ...customDefs]
   }
 
   getClient() {
@@ -79,7 +207,7 @@ export class DiscordMCPServer {
     }
 
     if (method === 'tools/list') {
-      return { jsonrpc: '2.0', result: { tools }, id }
+      return { jsonrpc: '2.0', result: { tools: this.getTools() }, id }
     }
 
     if (method === 'tools/call') {
@@ -89,7 +217,71 @@ export class DiscordMCPServer {
         return { jsonrpc: '2.0', error: { code: -32602, message: 'Invalid params: name is required' }, id }
       }
 
-      // Handle get_allowed_guilds and discord_list_guilds - only return guilds user has access to
+      // 1. Check if tool is a registered custom/external tool
+      const customTool = this.customTools.get(name)
+      if (customTool) {
+        let guildId: string | null = null
+        if (customTool.extractGuildId) {
+          guildId = customTool.extractGuildId(args || {}, this.client)
+        } else {
+          guildId = extractGuildId(name, args || {}, this.client)
+        }
+
+        // Validate access if auth is required
+        if (customTool.requiresAuth !== false) {
+          const validation = await this.validateAccess(apiKey, guildId)
+          if (!validation.valid) {
+            return {
+              jsonrpc: '2.0',
+              error: { code: -32001, message: validation.error || 'Unauthorized' },
+              id
+            }
+          }
+        }
+
+        let rawResult: any
+        try {
+          rawResult = await customTool.handler(args || {}, {
+            client: this.client,
+            apiKey,
+            database: this.database,
+            server: this,
+            rawArgs: args
+          })
+        } catch (handlerErr: any) {
+          console.error(`Custom tool "${name}" error:`, handlerErr)
+          rawResult = {
+            success: false,
+            error: {
+              code: 'CUSTOM_TOOL_ERROR',
+              message: handlerErr.message || 'Custom tool execution failed'
+            }
+          }
+        }
+
+        // Normalize result
+        let finalResult: any
+        if (rawResult && typeof rawResult === 'object' && typeof rawResult.success === 'boolean') {
+          finalResult = rawResult
+        } else {
+          finalResult = { success: true, data: rawResult }
+        }
+
+        if (this.onToolCall) {
+          this.onToolCall(name, args, finalResult, apiKey)
+        }
+
+        return {
+          jsonrpc: '2.0',
+          result: {
+            content: [{ type: 'text', text: JSON.stringify(finalResult, null, 2) }],
+            isError: !finalResult.success
+          },
+          id
+        }
+      }
+
+      // 2. Handle get_allowed_guilds and discord_list_guilds - only return guilds user has access to
       if (name === 'get_allowed_guilds' || name === 'discord_list_guilds') {
         // Just validate the API key is valid
         const validation = await this.validateAccess(apiKey, null)
@@ -123,7 +315,7 @@ export class DiscordMCPServer {
         }
       }
 
-      // Extract guildId from the request
+      // 3. Extract guildId from standard Discord tools
       const guildId = extractGuildId(name, args || {}, this.client)
 
       // Validate access via middleware
@@ -136,7 +328,7 @@ export class DiscordMCPServer {
         }
       }
 
-      // Execute tool (pass database handlers)
+      // Execute built-in Discord tool (pass database handlers)
       const result = await handleToolCall(this.client, name, args || {}, this.database)
 
       // Callback for logging
@@ -167,6 +359,7 @@ export class DiscordMCPServer {
       version: this.serverVersion,
       description: this.serverDescription,
       protocol: '2024-11-05',
+      toolCount: this.getTools().length,
       endpoints: {
         http: baseUrl,
         sse: `${baseUrl}/sse`,
@@ -192,8 +385,8 @@ export class DiscordMCPServer {
         '/api/mcp': {
           post: {
             operationId: 'executeDiscordTool',
-            summary: 'Execute Discord Tool',
-            description: 'Execute any Discord management tool by passing tool name and arguments',
+            summary: 'Execute Discord or Custom Tool',
+            description: `Execute any Discord management tool or registered custom tool by passing tool name and arguments. Available tools: ${this.getTools().length}`,
             requestBody: {
               required: true,
               content: {
@@ -203,7 +396,7 @@ export class DiscordMCPServer {
                     properties: {
                       name: {
                         type: 'string',
-                        description: 'Name of the Discord tool to run (e.g. discord_send_message, discord_list_guilds)'
+                        description: 'Name of the Discord tool or registered custom tool to run'
                       },
                       arguments: {
                         type: 'object',
@@ -247,3 +440,4 @@ export class DiscordMCPServer {
     }
   }
 }
+

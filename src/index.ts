@@ -1,12 +1,40 @@
 import { DiscordMCPServer } from './server'
-import type { MCPServerOptions, ValidateResult, ToolDefinition, ToolResult, DatabaseHandlers } from './types'
+import type {
+  MCPServerOptions,
+  ValidateResult,
+  ToolDefinition,
+  ToolResult,
+  DatabaseHandlers,
+  AllowedGuild,
+  CustomTool,
+  CustomToolHandler,
+  CustomToolContext,
+  HttpToolConfig,
+  ExternalMCPServerConfig,
+  MCPPlugin
+} from './types'
 import { tools } from './tools'
 import { handleToolCall, extractGuildId } from './handlers'
+import { defineTool, createHttpTool, proxyExternalMCPServer } from './external'
 
 export { DiscordMCPServer } from './server'
 export { tools } from './tools'
 export { handleToolCall, extractGuildId } from './handlers'
-export type { MCPServerOptions, ValidateResult, ToolDefinition, ToolResult, DatabaseHandlers, AllowedGuild } from './types'
+export { defineTool, createHttpTool, proxyExternalMCPServer } from './external'
+export type {
+  MCPServerOptions,
+  ValidateResult,
+  ToolDefinition,
+  ToolResult,
+  DatabaseHandlers,
+  AllowedGuild,
+  CustomTool,
+  CustomToolHandler,
+  CustomToolContext,
+  HttpToolConfig,
+  ExternalMCPServerConfig,
+  MCPPlugin
+} from './types'
 
 /**
  * Create a Discord MCP Server

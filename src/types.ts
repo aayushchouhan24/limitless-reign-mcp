@@ -39,6 +39,79 @@ export interface AllowedGuild {
   icon?: string | null
 }
 
+// Custom Tool execution context
+export interface CustomToolContext {
+  client: Client
+  apiKey?: string
+  database?: DatabaseHandlers
+  server: any
+  rawArgs: any
+}
+
+// Custom Tool handler function signature
+export type CustomToolHandler = (
+  args: any,
+  context: CustomToolContext
+) => Promise<ToolResult | any> | ToolResult | any
+
+// Custom / External tool definition
+export interface CustomTool {
+  name: string
+  description: string
+  inputSchema?: {
+    type?: string
+    properties?: Record<string, any>
+    required?: string[]
+    [key: string]: any
+  }
+  handler: CustomToolHandler
+  /** Optional guild ID extractor for permissions check */
+  extractGuildId?: (args: any, client: Client) => string | null
+  /** Whether this tool requires apiKey validation (default: true) */
+  requiresAuth?: boolean
+  /** Tool category/grouping for OpenAPI schemas or logging */
+  category?: string
+}
+
+// Configuration for HTTP / REST API tools
+export interface HttpToolConfig {
+  name: string
+  description: string
+  url: string | ((args: any) => string)
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  headers?: Record<string, string> | ((args: any, context: CustomToolContext) => Record<string, string> | Promise<Record<string, string>>)
+  inputSchema?: {
+    type?: string
+    properties?: Record<string, any>
+    required?: string[]
+    [key: string]: any
+  }
+  body?: (args: any) => any
+  transformResponse?: (data: any, response: Response) => any | Promise<any>
+  extractGuildId?: (args: any, client: Client) => string | null
+  requiresAuth?: boolean
+  category?: string
+}
+
+// Configuration for proxying an external MCP server
+export interface ExternalMCPServerConfig {
+  /** Base URL or SSE endpoint of the external MCP server */
+  url: string
+  /** Optional prefix for remote tool names to prevent conflicts (e.g., 'github_' or 'ext_') */
+  prefix?: string
+  /** Optional headers to forward or authenticate with the external MCP server */
+  headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>)
+  /** Optional filter to only include specific tools from the remote server */
+  filterTools?: (toolName: string) => boolean
+  /** Request timeout in ms (default: 30000) */
+  timeoutMs?: number
+  /** Whether remote tools should require local auth (default: true) */
+  requiresAuth?: boolean
+}
+
+// MCP Plugin interface
+export type MCPPlugin = (server: any) => void | Promise<void>
+
 export interface MCPServerOptions {
   // Discord client
   client: Client
@@ -55,8 +128,18 @@ export interface MCPServerOptions {
   // Optional: database handlers for persistence features
   database?: DatabaseHandlers
 
+  // Optional: list of initial custom / external tools
+  customTools?: (CustomTool | ToolDefinition & { handler: CustomToolHandler })[]
+
+  // Optional: external MCP servers to proxy
+  externalServers?: ExternalMCPServerConfig[]
+
+  // Optional: plugins to register on initialization
+  plugins?: MCPPlugin[]
+
   // Server info customization
   serverName?: string
   serverVersion?: string
   serverDescription?: string
 }
+

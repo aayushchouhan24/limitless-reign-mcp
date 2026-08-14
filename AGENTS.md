@@ -38,6 +38,7 @@ Once running, the agent can:
 - Schedule events
 - Direct Discord API calls
 - emoji.gg integration
+- Register custom tools, HTTP tools, or proxy external MCP servers (`mcp.registerTool`, `createHttpTool`, `registerExternalMCP`)
 
 ## Example Agent Prompts
 
@@ -45,6 +46,7 @@ Once running, the agent can:
 - "Create a welcome channel with rules embed"
 - "Timeout spammers and set up automod"
 - "Send daily announcements to #general"
+- "Add a custom tool to fetch API data"
 
 ## Token Security
 
