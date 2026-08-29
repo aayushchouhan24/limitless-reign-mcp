@@ -1,6 +1,6 @@
 ---
 name: limitless-reign
-description: Control Discord with AI - 100+ tools for messages, channels, moderation, roles, webhooks, automod, events, and more
+description: Control Discord with AI - 280+ tools for messages, voice audio streaming, gateway automations, channels, moderation, roles, webhooks, automod, events, and power primitives
 ---
 
 # Limitless Reign - Discord AI Control
@@ -35,12 +35,12 @@ curl -s http://localhost:3847 2>/dev/null | head -c 100
 
 ## Step 4: Success Response
 
-"**Discord connected!** You now have 100+ AI tools:
+"**Discord connected!** You now have 280+ AI tools:
 
-**Messages:** send, edit, delete, embeds, polls, reactions
-**Channels:** create, edit, delete, permissions, threads
-**Members:** kick, ban, timeout, roles, voice control
-**Server:** automod, webhooks, emojis, events, slash commands
+**Messages:** send, edit, delete, embeds, polls, reactions, forward, attachments
+**Channels & Voice:** create, edit, delete, permissions, threads, forums, live voice audio streaming, TTS
+**Members:** kick, ban, bulk-ban, timeout, roles, voice control, member profiling
+**Server & Automations:** gateway event automation, automod, webhooks, emojis, events, slash commands, power primitives
 
 **Try asking:**
 - 'List my Discord servers'

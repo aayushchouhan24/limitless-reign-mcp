@@ -1,6 +1,6 @@
 # Discord MCP - AI Agent Instructions
 
-This package lets AI agents control Discord bots with 100+ tools.
+This package lets AI agents control Discord bots with 280+ tools.
 
 ## Quick Setup for AI Agents
 

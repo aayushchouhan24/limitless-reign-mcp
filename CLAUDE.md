@@ -1,6 +1,6 @@
 # Limitless Reign MCP - Discord AI Control
 
-Control any Discord server with AI. 100+ tools included.
+Control any Discord server with AI. 280+ tools included.
 
 ## Quick Start
 

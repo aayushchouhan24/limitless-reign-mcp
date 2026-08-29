@@ -1,6 +1,6 @@
 # Limitless Reign MCP
 
-## AI-Powered Discord Bot Control | 100+ Tools | Works with Claude, ChatGPT, Cursor
+## AI-Powered Discord Bot Control | 280+ Tools | Works with Claude, ChatGPT, Cursor
 
 <p align="center">
   <img src="https://img.shields.io/npm/v/limitless-reign-mcp?style=for-the-badge&color=5865F2" alt="npm" />
@@ -101,30 +101,52 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 
 ---
 
-## 📋 All 116 Tools
+## 📋 All 283 Tools
 
 <details>
-<summary><strong>Bot & Connection (5)</strong></summary>
+<summary><strong>Bot & Gateway Connection (5)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_get_bot_info` | Bot info, server count, uptime |
-| `discord_get_gateway_info` | Connection status, ping |
-| `discord_set_presence` | Online/idle/dnd/invisible |
-| `discord_set_activity` | Playing/streaming/listening |
-| `discord_disconnect` | Disconnect bot |
+| `discord_get_bot_info` | Bot user details, guild count, uptime, and ready status |
+| `discord_get_gateway_info` | Gateway ping, connection status, shard count |
+| `discord_set_presence` | Online/idle/dnd/invisible status |
+| `discord_set_activity` | Playing/streaming/listening/watching/custom activity |
+| `discord_disconnect` | Gracefully disconnect bot from gateway |
 
 </details>
 
 <details>
-<summary><strong>Servers (16)</strong></summary>
+<summary><strong>Direct Messages / DMs (4)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `get_allowed_guilds` | List your servers |
+| `discord_send_dm` | Send a private DM to a user |
+| `discord_edit_dm` | Edit a private DM |
+| `discord_delete_dm` | Delete a private DM |
+| `discord_get_dms` | Read DM message history with user |
+
+</details>
+
+<details>
+<summary><strong>Servers & Community (33)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `get_allowed_guilds` | List your authorized servers |
 | `discord_list_guilds` | List accessible servers |
-| `discord_get_guild` | Server details |
-| `discord_edit_guild` | Edit server settings |
+| `discord_get_guild` | Server details & features |
+| `discord_edit_guild` | Edit server settings & icons |
+| `discord_get_server_stats` | Comprehensive stats (humans, bots, voice active, channels, boost tier) |
+| `discord_get_guild_preview` | Get public preview of discoverable server |
+| `discord_get_guild_regions` | List voice RTC regions |
+| `discord_get_guild_active_threads` | List all active threads across server |
+| `discord_edit_vanity_url` | Modify vanity invite code |
+| `discord_get_guild_incidents` | Get raid alerts & incident state |
+| `discord_edit_guild_incidents` | Configure raid alerts & disable invites/DMs |
+| `discord_get_member_safety_settings` | Get verification & safety requirements |
+| `discord_get_mfa_level` | Get server 2FA/MFA moderation level |
+| `discord_get_guild_nsfw_level` | Get server NSFW classification |
 | `discord_get_guild_channels` | List channels |
 | `discord_get_guild_roles` | List roles |
 | `discord_get_guild_emojis` | List emojis |
@@ -135,12 +157,37 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 | `discord_get_audit_log` | Audit log |
 | `discord_get_vanity_url` | Vanity URL |
 | `discord_leave_guild` | Leave server |
-| `discord_apply_template` | Apply template |
+| `discord_apply_template` | Apply predefined template |
+| `discord_get_guild_prune_count` | Preview inactive member prune count |
+| `discord_begin_guild_prune` | Prune inactive members |
+| `discord_get_guild_widget` | Get server widget embed & settings |
+| `discord_edit_guild_widget` | Enable/disable widget & channel |
+| `discord_get_guild_welcome_screen` | Community welcome screen info |
+| `discord_edit_guild_welcome_screen` | Edit welcome screen & channels |
+| `discord_get_guild_onboarding` | Get community onboarding flow |
+| `discord_edit_guild_onboarding` | Edit onboarding questions & default channels |
+| `discord_get_guild_integrations` | List Twitch/YouTube/bot integrations |
+| `discord_delete_guild_integration` | Delete server integration |
 
 </details>
 
 <details>
-<summary><strong>Channels (7)</strong></summary>
+<summary><strong>Native Discord Server Templates (7)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `discord_get_template` | Get native template by code |
+| `discord_list_guild_templates` | List server's native templates |
+| `discord_create_guild_template` | Create template from server |
+| `discord_sync_guild_template` | Sync template with server layout |
+| `discord_edit_guild_template` | Edit template name & description |
+| `discord_delete_guild_template` | Delete server template |
+| `discord_create_guild_from_template` | Create new guild from template |
+
+</details>
+
+<details>
+<summary><strong>Channels, Voice & Stage (22)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
@@ -148,54 +195,134 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 | `discord_edit_channel` | Edit settings |
 | `discord_delete_channel` | Delete channel |
 | `discord_clone_channel` | Clone with settings |
-| `discord_set_channel_permissions` | Set permissions |
-| `discord_create_invite` | Create invite |
+| `discord_find_channel` | Find channel by name & type |
+| `discord_get_channel_info` | Get channel details |
+| `discord_move_channel` | Move channel to category/position |
+| `discord_lock_channel` | Lock channel to prevent member messages |
+| `discord_unlock_channel` | Unlock a locked channel |
+| `discord_set_slowmode` | Set or remove channel slowmode delay |
+| `discord_set_channel_topic` | Update channel topic |
+| `discord_modify_channel_positions` | Reorder multiple channels |
+| `discord_sync_channel_permissions` | Sync permissions with parent category |
+| `discord_create_voice_channel` | Create voice channel |
+| `discord_create_stage_channel` | Create stage channel |
+| `discord_edit_voice_channel` | Edit voice/stage settings |
+| `discord_get_voice_channel_members` | List connected members in voice channel with audio/video status |
+| `discord_get_guild_voice_states` | Snapshot of all active voice channels & users in server |
+| `discord_set_channel_permissions` | Set permissions overwrite |
+| `discord_list_channel_permissions` | List channel overwrites |
+| `discord_delete_channel_permissions` | Delete channel overwrite |
+| `discord_create_invite` | Create invite link |
+| `discord_delete_invite` | Revoke invite link |
+| `discord_get_invite_details` | Get invite details & stats |
 
 </details>
 
 <details>
-<summary><strong>Threads (5)</strong></summary>
+<summary><strong>Categories (5)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_create_thread` | Create thread |
-| `discord_create_forum_post` | Create forum post |
-| `discord_edit_thread` | Edit thread |
-| `discord_delete_thread` | Delete thread |
-| `discord_get_active_threads` | List active threads |
+| `discord_create_category` | Create new category |
+| `discord_edit_category` | Edit category name/position |
+| `discord_delete_category` | Delete category |
+| `discord_find_category` | Find category by name |
+| `discord_list_channels_in_category` | List category's channels |
 
 </details>
 
 <details>
-<summary><strong>Messages (14)</strong></summary>
+<summary><strong>Forums & Threads (24)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `discord_create_forum_channel` | Create forum channel |
+| `discord_edit_forum_channel` | Edit forum settings/tags |
+| `discord_list_forum_channels` | List forum channels |
+| `discord_get_forum_channel_info` | Forum settings & tags |
+| `discord_list_forum_tags` | List available tags |
+| `discord_list_forum_posts` | List active posts |
+| `discord_create_forum_post` | Create forum post |
+| `discord_modify_forum_post` | Edit tags, pin/unpin, lock, archive forum post |
+| `discord_create_thread` | Create thread |
+| `discord_get_thread` | Get full thread metadata & counts |
+| `discord_edit_thread` | Edit thread |
+| `discord_delete_thread` | Delete thread |
+| `discord_lock_thread` | Lock thread to prevent new replies |
+| `discord_unlock_thread` | Unlock thread |
+| `discord_archive_thread` | Archive thread |
+| `discord_unarchive_thread` | Unarchive thread |
+| `discord_get_active_threads` | List active threads |
+| `discord_list_archived_public_threads` | List public archived threads |
+| `discord_list_archived_private_threads` | List private archived threads |
+| `discord_list_joined_private_threads` | List joined private archived threads |
+| `discord_join_thread` | Bot joins thread |
+| `discord_leave_thread` | Bot leaves thread |
+| `discord_add_thread_member` | Add user to thread |
+| `discord_remove_thread_member` | Remove user from thread |
+| `discord_get_thread_member` | Get user thread membership |
+| `discord_list_thread_members` | List all thread members |
+
+</details>
+
+<details>
+<summary><strong>Messages (29)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
 | `discord_send_message` | Send with embeds/buttons |
 | `discord_send_embed` | Rich embed |
 | `discord_send_components_v2` | Components V2 |
+| `discord_get_message` | Fetch single message |
+| `discord_reply_to_message` | Referenced inline reply |
+| `discord_send_typing` | Trigger typing indicator |
+| `discord_send_attachment` | Upload files with message |
+| `discord_download_attachment` | Retrieve file attachment metadata & URL |
+| `discord_forward_message` | Forward message using snapshots |
 | `discord_edit_message` | Edit message |
 | `discord_delete_message` | Delete message |
 | `discord_bulk_delete_messages` | Bulk delete |
 | `discord_get_messages` | Fetch messages |
-| `discord_pin_message` | Pin |
-| `discord_unpin_message` | Unpin |
+| `discord_search_messages` | Search messages across channel or server with keyword & author filters |
+| `discord_get_user_messages` | Fetch last 100-500 messages sent by a specific user across channels |
+| `discord_export_channel_transcript` | Export full message transcript from channel |
+| `discord_crosspost_message` | Publish announcement message to follower channels |
+| `discord_create_announcement_follower` | Follow announcement channel to auto-receive posts |
+| `discord_get_pinned_messages` | Get all pinned messages in channel |
+| `discord_pin_message` | Pin message |
+| `discord_unpin_message` | Unpin message |
+| `discord_get_reactions` | Get users who reacted with emoji |
 | `discord_add_reaction` | Add reaction |
 | `discord_remove_reaction` | Remove reaction |
+| `discord_clear_reaction_emoji` | Clear all reactions for emoji |
+| `discord_clear_all_reactions` | Remove every reaction from message |
 | `discord_create_poll` | Create poll |
+| `discord_end_poll` | Immediately expire active poll |
+| `discord_get_poll_voters` | List voters for poll answer |
 
 </details>
 
 <details>
-<summary><strong>Members (16)</strong></summary>
+<summary><strong>Users & Members (27)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
+| `discord_get_user` | Fetch global Discord user profile, avatar, banner |
+| `discord_get_user_profile` | Full profile: bio, custom status, rich presence games/Spotify, desktop/mobile status |
+| `discord_edit_bot_profile` | Edit bot username or avatar globally |
+| `discord_get_current_member` | Get bot's server member & permissions |
+| `discord_edit_current_member` | Change bot server nickname |
 | `discord_get_member` | Member info |
 | `discord_search_members` | Search members |
 | `discord_list_members` | List members |
+| `discord_get_user_id_by_name` | Get user ID for `<@id>` ping |
+| `discord_get_member_roles` | Get expanded role list for member |
+| `discord_list_role_members` | Find all members holding a role |
+| `discord_get_member_avatar` | Resolve server-specific avatar/banner |
+| `discord_get_member_permissions_in_channel` | Calculate channel effective permissions |
 | `discord_kick_member` | Kick |
 | `discord_ban_member` | Ban |
+| `discord_bulk_ban_members` | Native bulk ban multiple users |
 | `discord_unban_member` | Unban |
 | `discord_timeout_member` | Timeout |
 | `discord_remove_timeout` | Remove timeout |
@@ -206,29 +333,42 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 | `discord_disconnect_member` | Disconnect from voice |
 | `discord_server_mute_member` | Server mute |
 | `discord_server_deafen_member` | Server deafen |
+| `discord_modify_voice_state` | Mute/deafen/suppress in voice |
 
 </details>
 
 <details>
-<summary><strong>Roles (4)</strong></summary>
+<summary><strong>Roles & Permissions (12)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
 | `discord_create_role` | Create role |
+| `discord_get_role` | Get detailed role settings, permissions, icon |
 | `discord_edit_role` | Edit role |
 | `discord_delete_role` | Delete role |
+| `discord_modify_single_role_position` | Set single role position |
+| `discord_modify_role_positions` | Reorder role hierarchy |
+| `discord_get_role_members` | List members holding role |
+| `discord_get_default_everyone_role` | Get @everyone role & permissions |
+| `discord_set_role_icon` | Set role icon image |
+| `discord_set_role_unicode_emoji` | Set role emoji |
+| `discord_get_member_permissions` | Compute effective member permissions |
 | `discord_list_permissions` | List permissions |
 
 </details>
 
 <details>
-<summary><strong>Emojis & Stickers (6)</strong></summary>
+<summary><strong>Emojis & Stickers (10)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
 | `discord_create_emoji` | Create emoji |
+| `discord_get_emoji_details` | Emoji details & author |
+| `discord_edit_emoji` | Rename or role-restrict emoji |
 | `discord_delete_emoji` | Delete emoji |
 | `discord_create_sticker` | Create sticker |
+| `discord_get_sticker` | Get sticker details |
+| `discord_edit_sticker` | Edit sticker name/description/tags |
 | `discord_delete_sticker` | Delete sticker |
 | `discord_search_emojigg` | Search emoji.gg |
 | `discord_add_emojigg` | Add from emoji.gg |
@@ -236,83 +376,216 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 </details>
 
 <details>
-<summary><strong>Webhooks (3)</strong></summary>
+<summary><strong>Webhooks (13)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_create_webhook` | Create |
-| `discord_delete_webhook` | Delete |
+| `discord_create_webhook` | Create webhook |
+| `discord_get_webhook` | Get webhook details by ID |
+| `discord_get_channel_webhooks` | List all webhooks in channel |
+| `discord_edit_webhook` | Edit webhook name, avatar, or channel |
+| `discord_delete_webhook` | Delete webhook |
 | `discord_execute_webhook` | Send via webhook |
+| `discord_execute_webhook_wait` | Send webhook message & return created object |
+| `discord_execute_webhook_in_thread` | Send into thread or create forum post |
+| `discord_execute_webhook_slack` | Send Slack-compatible webhook payload |
+| `discord_execute_webhook_github` | Send GitHub-compatible webhook payload |
+| `discord_get_webhook_message` | Fetch webhook message |
+| `discord_edit_webhook_message` | Edit webhook message |
+| `discord_delete_webhook_message` | Delete webhook message |
 
 </details>
 
 <details>
-<summary><strong>AutoMod (3)</strong></summary>
+<summary><strong>AutoMod (5)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
 | `discord_get_automod_rules` | List rules |
+| `discord_get_automod_rule` | Get single rule details |
 | `discord_create_automod_rule` | Create rule |
+| `discord_edit_automod_rule` | Edit rule & filters |
 | `discord_delete_automod_rule` | Delete rule |
 
 </details>
 
 <details>
-<summary><strong>Events (3)</strong></summary>
+<summary><strong>Stage Instances (4)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `discord_get_stage_instance` | Get active stage instance details |
+| `discord_create_stage_instance` | Start/open a stage instance with topic |
+| `discord_edit_stage_instance` | Edit active stage topic/privacy |
+| `discord_delete_stage_instance` | Close/end a stage instance |
+
+</details>
+
+<details>
+<summary><strong>Soundboard (7)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `discord_list_soundboard_sounds` | List custom soundboard sounds |
+| `discord_get_soundboard_sound` | Get soundboard sound details |
+| `discord_create_soundboard_sound` | Upload custom soundboard audio |
+| `discord_edit_soundboard_sound` | Edit sound name/volume/emoji |
+| `discord_delete_soundboard_sound` | Delete soundboard sound |
+| `discord_send_soundboard_sound` | Play soundboard audio in voice channel |
+| `discord_list_default_soundboard_sounds` | List Discord default soundboard sounds |
+
+</details>
+
+<details>
+<summary><strong>Scheduled Events (6)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
 | `discord_create_scheduled_event` | Create event |
+| `discord_get_scheduled_event` | Fetch event details & interested user count |
+| `discord_edit_scheduled_event` | Edit event & status |
 | `discord_get_scheduled_events` | List events |
+| `discord_get_scheduled_event_users` | List interested users |
 | `discord_delete_scheduled_event` | Delete event |
 
 </details>
 
 <details>
-<summary><strong>Slash Commands (6)</strong></summary>
+<summary><strong>Slash Commands (15)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_create_global_command` | Create global |
-| `discord_create_guild_command` | Create guild |
-| `discord_delete_global_command` | Delete global |
-| `discord_delete_guild_command` | Delete guild |
-| `discord_get_global_commands` | List global |
-| `discord_get_guild_commands` | List guild |
+| `discord_create_global_command` | Create global command |
+| `discord_get_global_command` | Fetch single global command |
+| `discord_get_global_commands` | List global commands |
+| `discord_edit_global_command` | Edit global command |
+| `discord_delete_global_command` | Delete global command |
+| `discord_bulk_overwrite_global_commands` | Bulk overwrite all global commands |
+| `discord_create_guild_command` | Create guild command |
+| `discord_get_guild_command` | Fetch single guild command |
+| `discord_get_guild_commands` | List guild commands |
+| `discord_edit_guild_command` | Edit guild command |
+| `discord_delete_guild_command` | Delete guild command |
+| `discord_bulk_overwrite_guild_commands` | Bulk overwrite all guild commands |
+| `discord_get_command_permissions` | Get command permissions |
+| `discord_edit_command_permissions` | Set command permissions |
+| `discord_batch_edit_command_permissions` | Batch edit permissions for commands |
 
 </details>
 
 <details>
-<summary><strong>Interactions (4)</strong></summary>
+<summary><strong>Interactions & Activities (11)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_register_button_handler` | Button handler |
-| `discord_register_select_handler` | Select handler |
-| `discord_unregister_handler` | Remove handler |
-| `discord_list_handlers` | List handlers |
+| `discord_reply_interaction` | Reply to interaction |
+| `discord_defer_interaction` | Defer interaction ("thinking...") |
+| `discord_edit_interaction_reply` | Edit initial interaction reply |
+| `discord_delete_interaction_reply` | Delete initial interaction reply |
+| `discord_send_interaction_followup` | Send interaction follow-up |
+| `discord_get_interaction_followup` | Fetch interaction follow-up |
+| `discord_edit_interaction_followup` | Edit interaction follow-up |
+| `discord_delete_interaction_followup` | Delete interaction follow-up |
+| `discord_reply_autocomplete` | Respond to autocomplete suggestions |
+| `discord_show_modal` | Open modal popup |
+| `discord_launch_activity` | Create activity link in voice channel |
 
 </details>
 
 <details>
-<summary><strong>Advanced (8)</strong></summary>
+<summary><strong>Gateway Event Subscriptions & Automations (12)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_api_call` | Raw Discord API |
-| `discord_get_logs` | Action logs |
-| `discord_get_guild_config` | Get config |
-| `discord_set_guild_config` | Set config |
-| `discord_get_db_stats` | DB stats |
-| `discord_create_scheduled_task` | Create task |
-| `discord_list_scheduled_tasks` | List tasks |
-| `discord_cancel_scheduled_task` | Cancel task |
+| `discord_subscribe_events` | Subscribe to gateway events |
+| `discord_unsubscribe_events` | Unsubscribe from gateway events |
+| `discord_list_event_subscriptions` | List active event subscriptions |
+| `discord_wait_for_event` | Wait/poll until specific event occurs |
+| `discord_get_recent_events` | Query recent events buffer with filters |
+| `discord_register_message_handler` | Automated message handler |
+| `discord_register_reaction_handler` | Automated reaction handler |
+| `discord_register_member_handler` | Automated member join/leave handler |
+| `discord_register_voice_handler` | Automated voice state handler |
+| `discord_register_thread_handler` | Automated thread handler |
+| `discord_register_interaction_handler` | Automated interaction handler |
+| `discord_unregister_handler` | Remove automated handler |
+
+</details>
+
+<details>
+<summary><strong>Live Voice Connection & Audio (11)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `discord_join_voice_channel` | Connect bot to voice/stage channel |
+| `discord_leave_voice_channel` | Disconnect bot from voice |
+| `discord_get_bot_voice_state` | Get bot voice state & audio playback info |
+| `discord_play_audio` | Stream audio into voice channel |
+| `discord_pause_audio` | Pause audio playback |
+| `discord_resume_audio` | Resume audio playback |
+| `discord_stop_audio` | Stop audio & clear queue |
+| `discord_set_audio_volume` | Set audio volume (0-200%) |
+| `discord_play_audio_url` | Stream audio from direct URL |
+| `discord_play_local_audio` | Play local audio file from disk |
+| `discord_speak_tts` | Speak text-to-speech in voice channel |
+
+</details>
+
+<details>
+<summary><strong>Database & Scheduled Tasks (8)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `db_query` | SQL query on local SQLite |
+| `db_execute` | Execute SQL statement |
+| `db_list_tables` | List tables in DB |
+| `db_get_schema` | Get table schema |
+| `discord_get_logs` | Query action logs |
+| `discord_get_guild_config` | Get guild config |
+| `discord_set_guild_config` | Update guild config |
+| `discord_get_db_stats` | Database stats |
+| `schedule_task` | Schedule cron task |
+| `list_scheduled_tasks` | List scheduled tasks |
+| `cancel_scheduled_task` | Cancel scheduled task |
+
+</details>
+
+</details>
+
+<details>
+<summary><strong>High-Leverage Power Primitives (7)</strong></summary>
+
+| Tool | Description |
+|------|-------------|
+| `discord_resolve` | Universal parser for URLs, mentions (`<#id>`, `<@id>`, `<@&id>`), IDs, and names into Discord entities |
+| `discord_permission_check` | Preflight check for bot permissions & role hierarchy before executing destructive actions |
+| `discord_batch` | Execute multiple independent MCP tool calls concurrently with per-operation results |
+| `discord_get_api_capabilities` | Inspect active Gateway intents, privileged flags, voice readiness, and REST API version |
+| `discord_asset_to_data_uri` | Convert web URLs or local images into Discord base64 Data URIs for emojis/stickers/icons |
+| `discord_add_guild_member` | Add OAuth2-authorized user to a server using their OAuth access token |
+| `discord_api_call` | Raw Discord REST API call (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`) with query params & audit log reason |
 
 </details>
 
 ---
 
 ## 🔌 Connect Any AI
+
+### ✨ Gemini Spark (No Google OAuth Required)
+
+Connect your 24/7 Gemini Spark autonomous agent or Google AI Studio directly to Discord:
+
+1. **Expose your MCP server via tunnel** (or host on a VPS):
+   ```bash
+   cloudflared tunnel --url http://localhost:3000
+   ```
+2. **Add to Gemini Spark Connected Apps**:
+   - **SSE Mode:** `https://<your-tunnel-url>/sse`
+   - **Streamable HTTP Mode:** `https://<your-tunnel-url>/mcp`
+3. **Google AI Studio / Vertex AI (Direct Tool Export)**:
+   - Import all 283 tool declarations directly via `GET https://<your-tunnel-url>/gemini` (or `?format=gemini`).
+
+---
 
 ### Claude Desktop
 

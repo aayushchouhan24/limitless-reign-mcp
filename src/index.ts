@@ -67,54 +67,58 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
       // Handle CORS preflight
       if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, x-api-key, X-Requested-With, Accept')
         return res.status(204).end()
       }
 
-      // Extract API key from header or query
-      const authHeader = req.headers.authorization || ''
-      const apiKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : req.query.apiKey || ''
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, x-api-key, X-Requested-With, Accept')
 
-      // SSE endpoint (/sse)
-      if (path === '/sse' || path === '/sse/') {
+      // Extract API key from headers or query params
+      const authHeader = req.headers.authorization || ''
+      const customKeyHeader = req.headers['x-api-key'] || ''
+      const apiKey = customKeyHeader || (authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (req.query.apiKey || req.query.key || req.query.token || ''))
+
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http'
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost'
+      const baseUrl = `${protocol}://${host}${req.baseUrl || ''}`
+
+      // MCP & SSE endpoints (/mcp, /sse)
+      if (path === '/mcp' || path === '/mcp/' || path === '/sse' || path === '/sse/') {
         if (req.method === 'GET') {
-          // Validate first
-          const validation = await mcp.validateApiKey(apiKey)
-          if (!validation.valid) {
-            return res.status(401).json({ error: validation.error || 'Unauthorized' })
+          // If SSE connection requested or path is /sse
+          if (path.startsWith('/sse') || req.headers.accept?.includes('text/event-stream') || req.query.transport === 'sse') {
+            const validation = await mcp.validateApiKey(apiKey)
+            if (!validation.valid) {
+              return res.status(401).json({ error: validation.error || 'Unauthorized' })
+            }
+
+            res.setHeader('Content-Type', 'text/event-stream')
+            res.setHeader('Cache-Control', 'no-cache, no-transform')
+            res.setHeader('Connection', 'keep-alive')
+            res.setHeader('X-Accel-Buffering', 'no')
+
+            const sessionId = `mcp_${Date.now()}_${Math.random().toString(36).substring(7)}`
+            mcp.createSession(sessionId, apiKey)
+
+            res.write(`event: endpoint\ndata: ${baseUrl}/messages?sessionId=${sessionId}\n\n`)
+            res.write(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`)
+
+            const keepAlive = setInterval(() => {
+              try { res.write(': keepalive\n\n') } catch { clearInterval(keepAlive) }
+            }, 30000)
+
+            req.on('close', () => {
+              clearInterval(keepAlive)
+              mcp.deleteSession(sessionId)
+            })
+
+            return
           }
 
-          // Set SSE headers
-          res.setHeader('Content-Type', 'text/event-stream')
-          res.setHeader('Cache-Control', 'no-cache, no-transform')
-          res.setHeader('Connection', 'keep-alive')
-          res.setHeader('X-Accel-Buffering', 'no')
-          res.setHeader('Access-Control-Allow-Origin', '*')
-          res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-
-          const sessionId = `mcp_${Date.now()}_${Math.random().toString(36).substring(7)}`
-          const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http'
-          const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost'
-          const baseUrl = `${protocol}://${host}${req.baseUrl || ''}`
-
-          mcp.createSession(sessionId, apiKey)
-
-          // Send endpoint event
-          res.write(`event: endpoint\ndata: ${baseUrl}/sse?sessionId=${sessionId}\n\n`)
-          res.write(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`)
-
-          // Keep alive
-          const keepAlive = setInterval(() => {
-            try { res.write(': keepalive\n\n') } catch { clearInterval(keepAlive) }
-          }, 30000)
-
-          req.on('close', () => {
-            clearInterval(keepAlive)
-            mcp.deleteSession(sessionId)
-          })
-
-          return
+          // Otherwise return server info
+          return res.json(mcp.getServerInfo(baseUrl))
         }
 
         if (req.method === 'POST') {
@@ -125,21 +129,30 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
         }
       }
 
-      // Main endpoint (/ or empty)
+      // Health check endpoint (/health or /ping)
+      if (path === '/health' || path === '/ping') {
+        return res.json({ status: 'ok', toolCount: mcp.getTools().length, server: mcp.serverName, version: mcp.serverVersion })
+      }
+
+      // Main root endpoint (/ or empty)
       if (path === '/' || path === '') {
         if (req.method === 'GET') {
           const format = req.query.format
-          const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http'
-          const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost'
-          const baseUrl = `${protocol}://${host}${req.baseUrl || ''}`
-
           if (format === 'openapi' || format === 'gpt') {
             return res.json(mcp.generateOpenAPISchema(baseUrl))
+          }
+          if (format === 'gemini' || format === 'spark' || format === 'google') {
+            return res.json(mcp.generateGeminiSchema())
           }
           return res.json(mcp.getServerInfo(baseUrl))
         }
 
         if (req.method === 'POST') {
+          // If body is in Gemini function call format, handle directly
+          if (req.body?.functionCall || (req.body?.name && !req.body?.jsonrpc && !req.body?.method)) {
+            const response = await mcp.handleGeminiCall(req.body, apiKey)
+            return res.json(response)
+          }
           const response = await mcp.handleRequest(req.body, apiKey)
           return res.json(response)
         }
@@ -184,8 +197,57 @@ export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
       const pathname = url.pathname.replace(/\/sse\/?$/, '')
       const baseUrl = `${protocol}://${host}${pathname}`
 
+      // Check if client requested SSE directly on /api/mcp
+      const accept = req.headers.get('accept') || ''
+      if (accept.includes('text/event-stream') || url.searchParams.get('transport') === 'sse') {
+        const authHeader = req.headers.get('authorization') || ''
+        const customKeyHeader = req.headers.get('x-api-key') || ''
+        const apiKey = customKeyHeader || (authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (url.searchParams.get('apiKey') || url.searchParams.get('key') || url.searchParams.get('token') || ''))
+
+        const validation = await mcp.validateApiKey(apiKey)
+        if (!validation.valid) {
+          return Response.json({ error: validation.error || 'Unauthorized' }, { status: 401 })
+        }
+
+        const sessionId = `mcp_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        mcp.createSession(sessionId, apiKey)
+
+        const stream = new ReadableStream({
+          start(controller) {
+            const encoder = new TextEncoder()
+            controller.enqueue(encoder.encode(`event: endpoint\ndata: ${baseUrl}?sessionId=${sessionId}\n\n`))
+            controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`))
+
+            const keepAlive = setInterval(() => {
+              try { controller.enqueue(encoder.encode(': keepalive\n\n')) } catch { clearInterval(keepAlive) }
+            }, 30000)
+
+            req.signal.addEventListener('abort', () => {
+              clearInterval(keepAlive)
+              mcp.deleteSession(sessionId)
+              try { controller.close() } catch {}
+            })
+          },
+          cancel() { mcp.deleteSession(sessionId) }
+        })
+
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Authorization, Content-Type, x-api-key, X-Requested-With, Accept',
+          }
+        })
+      }
+
       if (format === 'openapi' || format === 'gpt') {
         return Response.json(mcp.generateOpenAPISchema(baseUrl))
+      }
+      if (format === 'gemini' || format === 'spark' || format === 'google') {
+        return Response.json(mcp.generateGeminiSchema())
       }
       return Response.json(mcp.getServerInfo(baseUrl))
     },
@@ -193,11 +255,22 @@ export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
     POST: async (req: Request) => {
       const mcp = await getMcp()
       const authHeader = req.headers.get('authorization') || ''
+      const customKeyHeader = req.headers.get('x-api-key') || ''
       const url = new URL(req.url)
-      const apiKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : url.searchParams.get('apiKey') || ''
+      const sessionId = url.searchParams.get('sessionId')
+      let apiKey = customKeyHeader || (authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (url.searchParams.get('apiKey') || url.searchParams.get('key') || url.searchParams.get('token') || ''))
+
+      if (sessionId) {
+        const sessionApiKey = mcp.getSessionApiKey(sessionId)
+        if (sessionApiKey) apiKey = sessionApiKey
+      }
 
       try {
         const body = await req.json()
+        if (body?.functionCall || (body?.name && !body?.jsonrpc && !body?.method)) {
+          const response = await mcp.handleGeminiCall(body, apiKey)
+          return Response.json(response)
+        }
         const response = await mcp.handleRequest(body, apiKey)
         return Response.json(response)
       } catch (err: any) {
@@ -209,8 +282,8 @@ export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
       status: 204,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type, x-api-key, X-Requested-With, Accept',
       }
     })
   }

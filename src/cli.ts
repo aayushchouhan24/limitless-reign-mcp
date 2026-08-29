@@ -148,8 +148,8 @@ if (externalMcpUrl) {
 
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Requested-With, Accept')
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
@@ -157,46 +157,52 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  const url = new URL(req.url || '/', `http://localhost:${port}`)
+  const protocol = req.headers['x-forwarded-proto'] || 'http'
+  const host = req.headers['x-forwarded-host'] || req.headers.host || `localhost:${port}`
+  const baseUrl = `${protocol}://${host}`
+  const url = new URL(req.url || '/', baseUrl)
 
-  // SSE endpoint
-  if (url.pathname === '/sse' && req.method === 'GET') {
-    const sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    mcp.createSession(sessionId, 'cli')
+  const authHeader = req.headers.authorization || ''
+  const customKeyHeader = (req.headers['x-api-key'] as string) || ''
+  const apiKey = customKeyHeader || (authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (url.searchParams.get('apiKey') || url.searchParams.get('key') || 'cli'))
 
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
-    })
+  // SSE or MCP GET endpoint (/sse, /mcp)
+  if ((url.pathname === '/sse' || url.pathname === '/mcp') && req.method === 'GET') {
+    if (url.pathname === '/sse' || req.headers.accept?.includes('text/event-stream') || url.searchParams.get('transport') === 'sse') {
+      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2)}`
+      mcp.createSession(sessionId, apiKey)
 
-    res.write(`data: ${JSON.stringify({ type: 'session', sessionId })}\n\n`)
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      })
 
-    const keepAlive = setInterval(() => {
-      res.write(`: keep-alive\n\n`)
-    }, 30000)
+      res.write(`event: endpoint\ndata: ${baseUrl}/messages?sessionId=${sessionId}\n\n`)
+      res.write(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`)
 
-    req.on('close', () => {
-      clearInterval(keepAlive)
-      mcp.deleteSession(sessionId)
-    })
-    return
-  }
+      const keepAlive = setInterval(() => {
+        try { res.write(`: keep-alive\n\n`) } catch { clearInterval(keepAlive) }
+      }, 30000)
 
-  // SSE POST
-  if (url.pathname === '/sse' && req.method === 'POST') {
-    const sessionId = url.searchParams.get('sessionId') || ''
-    if (!mcp.getSessionApiKey(sessionId)) {
-      res.writeHead(401, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'Invalid session' }))
+      req.on('close', () => {
+        clearInterval(keepAlive)
+        mcp.deleteSession(sessionId)
+      })
       return
     }
+  }
 
+  // SSE POST /messages, /sse, or /mcp with sessionId
+  if ((url.pathname === '/messages' || url.pathname === '/sse') && req.method === 'POST') {
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', async () => {
       try {
-        const result = await mcp.handleRequest(JSON.parse(body), 'cli')
+        const sessionId = url.searchParams.get('sessionId') || ''
+        const sessionApiKey = sessionId ? mcp.getSessionApiKey(sessionId) : null
+        const result = await mcp.handleRequest(JSON.parse(body), sessionApiKey || apiKey)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(result))
       } catch (e: any) {
@@ -207,12 +213,46 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // GET - server info or OpenAPI schema
+  // Gemini Spark / Google AI Studio / Vertex AI endpoint (/gemini)
+  if (url.pathname === '/gemini' || url.pathname === '/gemini/execute') {
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(mcp.generateGeminiSchema()))
+      return
+    }
+    if (req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => body += chunk)
+      req.on('end', async () => {
+        try {
+          const result = await mcp.handleGeminiCall(JSON.parse(body), apiKey)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify(result))
+        } catch (e: any) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: e.message }))
+        }
+      })
+      return
+    }
+  }
+
+  // Health check endpoint
+  if (url.pathname === '/health' || url.pathname === '/ping') {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ status: 'ok', tools: mcp.getTools().length, server: mcp.serverName, version: mcp.serverVersion }))
+    return
+  }
+
+  // GET - server info, OpenAPI schema, or Gemini schema
   if (req.method === 'GET') {
-    const baseUrl = `http://localhost:${port}`
-    if (url.searchParams.get('format') === 'openapi') {
+    const format = url.searchParams.get('format')
+    if (format === 'openapi' || format === 'gpt') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(mcp.generateOpenAPISchema(baseUrl)))
+    } else if (format === 'gemini' || format === 'spark' || format === 'google') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(mcp.generateGeminiSchema()))
     } else {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(mcp.getServerInfo(baseUrl)))
@@ -220,13 +260,20 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // POST - tool calls
+  // POST - Streamable HTTP tool calls / JSON-RPC / Gemini calls
   if (req.method === 'POST') {
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', async () => {
       try {
-        const result = await mcp.handleRequest(JSON.parse(body), 'cli')
+        const parsed = JSON.parse(body)
+        if (parsed?.functionCall || (parsed?.name && !parsed?.jsonrpc && !parsed?.method)) {
+          const result = await mcp.handleGeminiCall(parsed, apiKey)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify(result))
+          return
+        }
+        const result = await mcp.handleRequest(parsed, apiKey)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(result))
       } catch (e: any) {
@@ -251,9 +298,16 @@ client.once('ready', () => {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Connect Claude Desktop:
-  Edit claude_desktop_config.json and add:
+Connect Gemini Spark (No Google OAuth required):
+  1. Tunnel to internet: cloudflared tunnel --url http://localhost:${port}
+  2. In Gemini / Gemini Spark Connected Apps, add URL:
+     https://<your-tunnel-url>/sse
+     or Streamable HTTP: https://<your-tunnel-url>/mcp
+  3. Or export Gemini Tools directly into Google AI Studio:
+     GET https://<your-tunnel-url>/gemini (or ?format=gemini)
 
+Connect Claude Desktop:
+  Edit claude_desktop_config.json:
   {
     "mcpServers": {
       "discord": {
@@ -265,12 +319,10 @@ Connect Claude Desktop:
 Connect ChatGPT:
   Settings → Plugins → Add: http://localhost:${port}/sse
 
-Connect Cursor/Windsurf:
+Connect Cursor / Windsurf:
   Settings → MCP → Add server: http://localhost:${port}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Press Ctrl+C to stop
 `)
   })
 })
