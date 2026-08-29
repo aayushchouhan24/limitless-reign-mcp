@@ -6,6 +6,7 @@ import {
   ButtonStyle,
   WebhookClient,
   ActivityType,
+  AttachmentBuilder,
   type PresenceStatusData,
   type Client,
   type TextChannel,
@@ -21,6 +22,38 @@ function success(data: any): ToolResult {
 
 function error(code: string, message: string): ToolResult {
   return { success: false, error: { code, message } }
+}
+
+function normalizeAttachments(args: any): AttachmentBuilder[] {
+  const result: AttachmentBuilder[] = []
+  
+  if (args.fileUrl || args.url) {
+    const u = args.fileUrl || args.url
+    result.push(new AttachmentBuilder(u, { name: args.fileName || args.name }))
+  }
+  if (args.filePath) {
+    result.push(new AttachmentBuilder(args.filePath, { name: args.fileName || args.name }))
+  }
+  if (args.base64) {
+    const raw = args.base64.includes(',') ? args.base64.split(',')[1] : args.base64
+    const buffer = Buffer.from(raw, 'base64')
+    result.push(new AttachmentBuilder(buffer, { name: args.fileName || 'attachment.png' }))
+  }
+  if (args.files && Array.isArray(args.files)) {
+    for (const f of args.files) {
+      if (typeof f === 'string') {
+        result.push(new AttachmentBuilder(f))
+      } else if (f && typeof f === 'object') {
+        const source = f.attachment || f.url || f.filePath || f.file
+        if (source) {
+          result.push(new AttachmentBuilder(source, { name: f.name || f.filename, description: f.description }))
+        }
+      }
+    }
+  } else if (args.files && typeof args.files === 'string') {
+    result.push(new AttachmentBuilder(args.files))
+  }
+  return result
 }
 
 const SERVER_TEMPLATES: Record<string, any> = {
@@ -989,8 +1022,8 @@ export async function handleToolCall(client: Client, name: string, args: any, db
 
       // ========== MESSAGE OPERATIONS ==========
       case 'discord_send_message': {
-        const channel = client.channels.cache.get(args.channelId) as TextChannel
-        if (!channel?.isTextBased()) return error('INVALID_CHANNEL', 'Channel is not a text channel')
+        const channel = (client.channels.cache.get(args.channelId) || await client.channels.fetch(args.channelId).catch(() => null)) as any
+        if (!channel?.isTextBased()) return error('INVALID_CHANNEL', 'Channel is not a text channel or is inaccessible')
         const opts: any = {}
         if (args.content) opts.content = args.content
         if (args.embeds) {
@@ -1009,10 +1042,16 @@ export async function handleToolCall(client: Client, name: string, args: any, db
             return embed
           })
         }
+        const attachments = normalizeAttachments(args)
+        if (attachments.length > 0) opts.files = attachments
         if (args.replyTo) opts.reply = { messageReference: args.replyTo }
         if (args.tts) opts.tts = true
         const msg = await channel.send(opts)
-        return success({ id: msg.id, channelId: msg.channelId })
+        return success({
+          id: msg.id,
+          channelId: msg.channelId,
+          attachments: msg.attachments.map((a: any) => ({ id: a.id, name: a.name, url: a.url }))
+        })
       }
 
       case 'discord_send_embed': {
@@ -2142,10 +2181,16 @@ export async function handleToolCall(client: Client, name: string, args: any, db
       }
 
       case 'discord_send_attachment': {
-        const channel = client.channels.cache.get(args.channelId) as TextChannel
-        if (!channel?.isTextBased()) return error('INVALID_CHANNEL', 'Not a text channel')
-        const msg = await channel.send({ content: args.content, files: args.files })
-        return success({ id: msg.id, channelId: msg.channelId, attachments: msg.attachments.map(a => ({ id: a.id, name: a.name, url: a.url })) })
+        const channel = (client.channels.cache.get(args.channelId) || await client.channels.fetch(args.channelId).catch(() => null)) as any
+        if (!channel?.isTextBased()) return error('INVALID_CHANNEL', 'Channel is not a text channel or is inaccessible')
+        const files = normalizeAttachments(args)
+        if (files.length === 0) return error('NO_ATTACHMENT', 'No valid attachment file, URL, base64, or filePath provided')
+        const msg = await channel.send({ content: args.content, files })
+        return success({
+          id: msg.id,
+          channelId: msg.channelId,
+          attachments: msg.attachments.map((a: any) => ({ id: a.id, name: a.name, url: a.url, size: a.size }))
+        })
       }
 
       case 'discord_download_attachment': {
@@ -3035,12 +3080,12 @@ export async function handleToolCall(client: Client, name: string, args: any, db
 
       // ========== LIVE VOICE & AUDIO CONNECTION (11) ==========
       case 'discord_join_voice_channel': {
-        const state = voiceManager.join(args.guildId, args.channelId)
+        const state = await voiceManager.join(client, args.guildId, args.channelId, args.mute, args.deaf)
         return success({ state, message: `Connected to voice channel ${args.channelId}` })
       }
 
       case 'discord_leave_voice_channel': {
-        const left = voiceManager.leave(args.guildId)
+        const left = await voiceManager.leave(client, args.guildId)
         return success({ disconnected: left, guildId: args.guildId })
       }
 
@@ -3050,9 +3095,12 @@ export async function handleToolCall(client: Client, name: string, args: any, db
       }
 
       case 'discord_play_audio': {
-        const state = voiceManager.playAudio(args.guildId, args.source, 'url', args.title)
-        if (!state) return error('NOT_CONNECTED', 'Bot is not connected to a voice channel in this guild')
-        return success({ playback: state })
+        try {
+          const state = await voiceManager.playAudio(args.guildId, args.source, 'url', args.title)
+          return success({ playback: state, message: `Now playing audio in voice channel` })
+        } catch (e: any) {
+          return error('PLAYBACK_ERROR', e.message)
+        }
       }
 
       case 'discord_pause_audio': {
@@ -3078,21 +3126,68 @@ export async function handleToolCall(client: Client, name: string, args: any, db
       }
 
       case 'discord_play_audio_url': {
-        const state = voiceManager.playAudio(args.guildId, args.url, 'url', args.title)
-        if (!state) return error('NOT_CONNECTED', 'Bot is not connected to a voice channel in this guild')
-        return success({ playback: state })
+        try {
+          const state = await voiceManager.playAudio(args.guildId, args.url, 'url', args.title)
+          return success({ playback: state, message: `Now streaming audio URL` })
+        } catch (e: any) {
+          return error('PLAYBACK_ERROR', e.message)
+        }
       }
 
       case 'discord_play_local_audio': {
-        const state = voiceManager.playAudio(args.guildId, args.filePath, 'local')
-        if (!state) return error('NOT_CONNECTED', 'Bot is not connected to a voice channel in this guild')
-        return success({ playback: state })
+        try {
+          const src = args.base64 || args.filePath || args.source
+          const type = args.base64 ? 'base64' : 'url'
+          const state = await voiceManager.playAudio(args.guildId, src, type)
+          return success({ playback: state, message: `Now streaming audio in voice channel` })
+        } catch (e: any) {
+          return error('PLAYBACK_ERROR', e.message)
+        }
       }
 
       case 'discord_speak_tts': {
-        const state = voiceManager.playAudio(args.guildId, args.text, 'tts', `TTS: ${args.text.substring(0, 30)}`)
-        if (!state) return error('NOT_CONNECTED', 'Bot is not connected to a voice channel in this guild')
-        return success({ playback: state })
+        try {
+          const state = await voiceManager.playAudio(args.guildId, args.text, 'tts', `TTS: ${args.text.substring(0, 30)}`)
+          return success({ playback: state, message: `Speaking text: "${args.text}"` })
+        } catch (e: any) {
+          return error('TTS_ERROR', e.message)
+        }
+      }
+
+      case 'discord_start_voice_recording': {
+        try {
+          const recording = await voiceManager.startRecording(args.guildId, {
+            userId: args.userId,
+            excludedUserIds: args.excludedUserIds,
+            multiTrack: args.multiTrack
+          })
+          return success({
+            recording,
+            message: `Started recording voice channel audio (ID: ${recording.id}, MultiTrack: ${recording.multiTrack !== false})`
+          })
+        } catch (e: any) {
+          return error('RECORDING_ERROR', e.message)
+        }
+      }
+
+      case 'discord_stop_voice_recording': {
+        try {
+          const recording = await voiceManager.stopRecording(args.guildId, {
+            sendToChannelId: args.sendToChannelId || args.channelId,
+            client
+          })
+          return success({
+            recording,
+            message: `Recording finalized in-memory (${recording.durationSeconds}s, ${recording.sizeBytes} bytes)${recording.attachmentUrl ? ` and sent to channel as ${recording.attachmentUrl}` : ''}`
+          })
+        } catch (e: any) {
+          return error('RECORDING_ERROR', e.message)
+        }
+      }
+
+      case 'discord_list_voice_recordings': {
+        const recordings = voiceManager.listRecordings(args.guildId)
+        return success({ recordings, count: recordings.length })
       }
 
       // ========== HIGH-LEVERAGE POWER PRIMITIVES (6) ==========

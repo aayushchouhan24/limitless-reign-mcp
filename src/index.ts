@@ -21,6 +21,8 @@ export { DiscordMCPServer } from './server'
 export { tools } from './tools'
 export { handleToolCall, extractGuildId } from './handlers'
 export { defineTool, createHttpTool, proxyExternalMCPServer } from './external'
+export { voiceManager } from './voice'
+export { eventManager } from './events'
 export type {
   MCPServerOptions,
   ValidateResult,

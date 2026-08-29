@@ -2317,21 +2317,16 @@ export const tools = [
       properties: {
         channelId: { type: 'string', description: 'Channel ID' },
         content: { type: 'string', description: 'Optional text message content' },
+        fileUrl: { type: 'string', description: 'Direct URL to a file/image to attach' },
+        filePath: { type: 'string', description: 'Local path to a file/image to attach' },
+        base64: { type: 'string', description: 'Base64 data URI or raw base64 string to attach' },
+        fileName: { type: 'string', description: 'Custom file name (e.g. image.png)' },
         files: {
           type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              attachment: { type: 'string', description: 'File URL or base64 or path' },
-              name: { type: 'string', description: 'File name (e.g., image.png)' },
-              description: { type: 'string', description: 'Alt text / file description' }
-            },
-            required: ['attachment']
-          },
-          description: 'Array of file attachment objects'
+          description: 'Array of file attachment URLs, paths, or objects ({ attachment, name, description })'
         }
       },
-      required: ['channelId', 'files']
+      required: ['channelId']
     }
   },
   {
@@ -3632,6 +3627,44 @@ export const tools = [
         voice: { type: 'string', description: 'Voice accent/language (e.g. en, es, fr)' }
       },
       required: ['guildId', 'text']
+    }
+  },
+  {
+    name: 'discord_start_voice_recording',
+    description: 'Start recording audio from users in the active voice channel with multi-track and user filter support',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        guildId: { type: 'string', description: 'Guild ID' },
+        userId: { type: 'string', description: 'Optional: record only a specific user ID' },
+        excludedUserIds: { type: 'array', items: { type: 'string' }, description: 'User IDs to ignore/block from recording' },
+        multiTrack: { type: 'boolean', description: 'Save separate audio files per speaker in addition to combined master track (default true)' },
+        format: { type: 'string', enum: ['opus', 'raw'], description: 'Audio file format' }
+      },
+      required: ['guildId']
+    }
+  },
+  {
+    name: 'discord_stop_voice_recording',
+    description: 'Stop active voice recording, finalize in-memory audio buffers, get Base64 data URIs, and optionally post directly to a Discord channel',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        guildId: { type: 'string', description: 'Guild ID' },
+        sendToChannelId: { type: 'string', description: 'Optional: Text channel ID to upload the recorded audio directly as a Discord attachment message' }
+      },
+      required: ['guildId']
+    }
+  },
+  {
+    name: 'discord_list_voice_recordings',
+    description: 'List saved voice channel audio recordings on disk with timestamps and duration',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        guildId: { type: 'string', description: 'Optional: filter by Guild ID' }
+      },
+      required: []
     }
   },
 

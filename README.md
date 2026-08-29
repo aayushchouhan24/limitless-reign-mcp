@@ -513,21 +513,24 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 </details>
 
 <details>
-<summary><strong>Live Voice Connection & Audio (11)</strong></summary>
+<summary><strong>Live Voice Connection, Audio Streaming & Recording (14)</strong></summary>
 
 | Tool | Description |
 |------|-------------|
-| `discord_join_voice_channel` | Connect bot to voice/stage channel |
-| `discord_leave_voice_channel` | Disconnect bot from voice |
-| `discord_get_bot_voice_state` | Get bot voice state & audio playback info |
-| `discord_play_audio` | Stream audio into voice channel |
-| `discord_pause_audio` | Pause audio playback |
-| `discord_resume_audio` | Resume audio playback |
-| `discord_stop_audio` | Stop audio & clear queue |
-| `discord_set_audio_volume` | Set audio volume (0-200%) |
-| `discord_play_audio_url` | Stream audio from direct URL |
-| `discord_play_local_audio` | Play local audio file from disk |
-| `discord_speak_tts` | Speak text-to-speech in voice channel |
+| `discord_join_voice_channel` | Connect bot to voice or stage channel (Opcode 4 Gateway WebRTC) |
+| `discord_leave_voice_channel` | Disconnect bot from active voice channel |
+| `discord_get_bot_voice_state` | Get bot voice state, active playback track, and volume |
+| `discord_play_audio` | Stream audio from YouTube, Spotify, SoundCloud, or direct URLs |
+| `discord_play_audio_url` | Stream direct audio URL (.mp3, .wav, .ogg, .aac, .mp4 stream) |
+| `discord_play_local_audio` | Play local sound file from disk into voice channel |
+| `discord_speak_tts` | Synthesize text to speech and speak in voice channel |
+| `discord_pause_audio` | Pause active audio playback |
+| `discord_resume_audio` | Resume paused audio playback |
+| `discord_stop_audio` | Stop audio playback and clear track |
+| `discord_set_audio_volume` | Adjust playback volume (0–200%) |
+| `discord_start_voice_recording` | Multi-track voice recording (all speakers + separate per-user tracks + user filters) |
+| `discord_stop_voice_recording` | Stop recording, finalize `.opus` files, and get duration & file size |
+| `discord_list_voice_recordings` | List saved voice channel audio recordings on disk |
 
 </details>
 
@@ -566,6 +569,94 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 | `discord_api_call` | Raw Discord REST API call (`GET`, `POST`, `PATCH`, `PUT`, `DELETE`) with query params & audit log reason |
 
 </details>
+
+---
+
+## 🎙️ Live Voice Streaming & Multi-Track Audio Recording
+
+Limitless Reign includes a full **WebRTC Audio Pipeline (`@discordjs/voice`)** allowing AI models to stream music, speak TTS, and record multi-user voice conversations with individual per-speaker tracks.
+
+### 1. Connect & Stream Music / Audio
+```json
+// 1. Join Voice Channel
+{
+  "tool": "discord_join_voice_channel",
+  "arguments": {
+    "guildId": "1532381127564857484",
+    "channelId": "1537206459102666803"
+  }
+}
+
+// 2. Stream YouTube, Spotify, or Direct MP3
+{
+  "tool": "discord_play_audio",
+  "arguments": {
+    "guildId": "1532381127564857484",
+    "source": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "title": "Never Gonna Give You Up"
+  }
+}
+
+// 3. Adjust Volume
+{
+  "tool": "discord_set_audio_volume",
+  "arguments": {
+    "guildId": "1532381127564857484",
+    "volume": 75
+  }
+}
+```
+
+### 2. Pure In-Memory Multi-Track Recording (Zero Disk Required)
+```json
+// Start Recording (buffered purely in memory with optional exclusion filters)
+{
+  "tool": "discord_start_voice_recording",
+  "arguments": {
+    "guildId": "1532381127564857484",
+    "multiTrack": true,
+    "excludedUserIds": ["123456789012345678"] // Ignore bots or noisy users
+  }
+}
+
+// Stop Recording & optionally upload directly to a Discord text channel
+{
+  "tool": "discord_stop_voice_recording",
+  "arguments": {
+    "guildId": "1532381127564857484",
+    "sendToChannelId": "1532381127564857486" // Optional: uploads in-memory buffer as Discord attachment message
+  }
+}
+```
+**Response Output (In-Memory Base64 Data URIs & CDN Attachment):**
+```json
+{
+  "success": true,
+  "data": {
+    "recording": {
+      "id": "rec_1788029582",
+      "durationSeconds": 45,
+      "sizeBytes": 542100,
+      "status": "completed",
+      "attachmentUrl": "https://cdn.discordapp.com/attachments/.../rec_1788029582_recording.opus",
+      "dataUri": "data:audio/ogg;codecs=opus;base64,T3B1c0hlYWQ...",
+      "tracks": [
+        {
+          "name": "Master Combined Track (All Speakers)",
+          "sizeBytes": 542100,
+          "dataUri": "data:audio/ogg;codecs=opus;base64,..."
+        },
+        {
+          "userId": "1136967689517142087",
+          "name": "Speaker Track (User 1136967689517142087)",
+          "sizeBytes": 271000,
+          "dataUri": "data:audio/ogg;codecs=opus;base64,..."
+        }
+      ]
+    }
+  }
+}
+```
 
 ---
 
