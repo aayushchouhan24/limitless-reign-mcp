@@ -5,7 +5,7 @@
 <p align="center">
   <img src="https://img.shields.io/npm/v/limitless-reign-mcp?style=for-the-badge&color=5865F2" alt="npm" />
   <img src="https://img.shields.io/npm/dm/limitless-reign-mcp?style=for-the-badge&color=57F287" alt="downloads" />
-  <img src="https://img.shields.io/github/stars/aayushchouhan24/limitless-reign?style=for-the-badge&color=FEE75C" alt="stars" />
+  <img src="https://img.shields.io/github/stars/aayushchouhan24/limitless-reign-mcp?style=for-the-badge&color=FEE75C" alt="stars" />
   <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge" alt="discord.js" />
 </p>
 
@@ -573,17 +573,32 @@ npx limitless-reign --token YOUR_BOT_TOKEN
 
 ### ✨ Gemini Spark (No Google OAuth Required)
 
-Connect your 24/7 Gemini Spark autonomous agent or Google AI Studio directly to Discord:
+Connect Google's 24/7 autonomous Gemini Spark agent to Discord:
 
-1. **Expose your MCP server via tunnel** (or host on a VPS):
-   ```bash
-   cloudflared tunnel --url http://localhost:3000
-   ```
-2. **Add to Gemini Spark Connected Apps**:
-   - **SSE Mode:** `https://<your-tunnel-url>/sse`
-   - **Streamable HTTP Mode:** `https://<your-tunnel-url>/mcp`
-3. **Google AI Studio / Vertex AI (Direct Tool Export)**:
-   - Import all 283 tool declarations directly via `GET https://<your-tunnel-url>/gemini` (or `?format=gemini`).
+1. **Start tunnel to your local server**:
+   - For **Limitless Reign Dashboard** (Next.js on port 3000):
+     ```bash
+     cloudflared tunnel --url http://localhost:3000
+     ```
+   - For **Standalone CLI** (`npx limitless-reign --port 3847`):
+     ```bash
+     cloudflared tunnel --url http://localhost:3847
+     ```
+
+2. **In Gemini Spark > Connected Apps > Add Custom App Link**:
+   - **For Web Dashboard (Next.js):**
+     ```text
+     https://<your-tunnel-url>/api/mcp?apiKey=lr_YOUR_API_KEY
+     ```
+   - **For Standalone CLI:**
+     ```text
+     https://<your-tunnel-url>/mcp
+     ```
+
+3. **Google AI Studio / Vertex AI (Tool Export)**:
+   - Fetch native Gemini Function Declarations for all 283 tools:
+     - Dashboard: `GET https://<your-tunnel-url>/api/mcp?format=gemini`
+     - Standalone CLI: `GET https://<your-tunnel-url>/gemini`
 
 ---
 
