@@ -65,7 +65,10 @@ export class DiscordMCPServer {
   }
 
   deleteSession(sessionId: string) {
-    this.sessions.delete(sessionId)
+    // Keep session cached for 30 minutes to prevent race conditions during SSE stream cycles
+    setTimeout(() => {
+      this.sessions.delete(sessionId)
+    }, 1800000)
   }
 
   getSessionApiKey(sessionId: string): string | null {
@@ -364,80 +367,7 @@ export class DiscordMCPServer {
       endpoints: {
         http: cleanBase,
         sse: `${cleanBase}/sse`,
-        gemini: `${cleanBase}?format=gemini`,
         openapi: `${cleanBase}?format=openapi`
-      }
-    }
-  }
-
-  /**
-   * Generate Gemini Function Declarations schema for Gemini Spark, Vertex AI, and Google AI Studio
-   */
-  generateGeminiSchema() {
-    const tools = this.getTools()
-    return {
-      functionDeclarations: tools.map(t => {
-        const properties: Record<string, any> = {}
-        const inputProps = (t.inputSchema as any)?.properties || {}
-        for (const [key, val] of Object.entries(inputProps)) {
-          const propVal = val as any
-          properties[key] = {
-            type: propVal.type ? propVal.type.toUpperCase() : 'STRING',
-            description: propVal.description || key
-          }
-          if (propVal.items) {
-            properties[key].items = {
-              type: propVal.items.type ? propVal.items.type.toUpperCase() : 'STRING'
-            }
-          }
-          if (propVal.enum) {
-            properties[key].enum = propVal.enum
-          }
-        }
-
-        return {
-          name: t.name,
-          description: t.description,
-          parameters: {
-            type: 'OBJECT',
-            properties,
-            required: (t.inputSchema as any)?.required || []
-          }
-        }
-      })
-    }
-  }
-
-  /**
-   * Execute tool directly in Google Gemini / Gemini Spark function calling format
-   */
-  async handleGeminiCall(payload: any, apiKey: string = ''): Promise<any> {
-    const fnName = payload.name || payload.functionCall?.name || payload.tool
-    const fnArgs = payload.args || payload.functionCall?.args || payload.arguments || payload.parameters || {}
-
-    if (!fnName) {
-      return { error: 'Function name is required' }
-    }
-
-    const rpcRes = await this.handleRequest({
-      jsonrpc: '2.0',
-      method: 'tools/call',
-      params: { name: fnName, arguments: fnArgs },
-      id: 'gemini-call'
-    }, apiKey)
-
-    let content: any
-    try {
-      content = JSON.parse(rpcRes.result?.content?.[0]?.text || '{}')
-    } catch {
-      content = rpcRes.result?.content?.[0]?.text || rpcRes.error || {}
-    }
-
-    return {
-      name: fnName,
-      response: {
-        name: fnName,
-        content
       }
     }
   }

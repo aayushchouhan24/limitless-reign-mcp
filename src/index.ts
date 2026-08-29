@@ -102,7 +102,10 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
             const sessionId = `mcp_${Date.now()}_${Math.random().toString(36).substring(7)}`
             mcp.createSession(sessionId, apiKey)
 
-            res.write(`event: endpoint\ndata: ${baseUrl}/messages?sessionId=${sessionId}\n\n`)
+            // Flush proxy/Cloudflare buffer with SSE comment
+            res.write(`: ${' '.repeat(2048)}\n\n`)
+            const endpointUrl = apiKey ? `${baseUrl}/messages?sessionId=${sessionId}&apiKey=${encodeURIComponent(apiKey)}` : `${baseUrl}/messages?sessionId=${sessionId}`
+            res.write(`event: endpoint\ndata: ${endpointUrl}\n\n`)
             res.write(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`)
 
             const keepAlive = setInterval(() => {
@@ -141,18 +144,10 @@ export function expressMiddleware(mcp: DiscordMCPServer) {
           if (format === 'openapi' || format === 'gpt') {
             return res.json(mcp.generateOpenAPISchema(baseUrl))
           }
-          if (format === 'gemini' || format === 'spark' || format === 'google') {
-            return res.json(mcp.generateGeminiSchema())
-          }
           return res.json(mcp.getServerInfo(baseUrl))
         }
 
         if (req.method === 'POST') {
-          // If body is in Gemini function call format, handle directly
-          if (req.body?.functionCall || (req.body?.name && !req.body?.jsonrpc && !req.body?.method)) {
-            const response = await mcp.handleGeminiCall(req.body, apiKey)
-            return res.json(response)
-          }
           const response = await mcp.handleRequest(req.body, apiKey)
           return res.json(response)
         }
@@ -215,7 +210,10 @@ export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
         const stream = new ReadableStream({
           start(controller) {
             const encoder = new TextEncoder()
-            controller.enqueue(encoder.encode(`event: endpoint\ndata: ${baseUrl}?sessionId=${sessionId}\n\n`))
+            // Flush proxy/Cloudflare buffer with SSE comment
+            controller.enqueue(encoder.encode(`: ${' '.repeat(2048)}\n\n`))
+            const endpointUrl = apiKey ? `${baseUrl}?sessionId=${sessionId}&apiKey=${encodeURIComponent(apiKey)}` : `${baseUrl}?sessionId=${sessionId}`
+            controller.enqueue(encoder.encode(`event: endpoint\ndata: ${endpointUrl}\n\n`))
             controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`))
 
             const keepAlive = setInterval(() => {
@@ -246,9 +244,6 @@ export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
       if (format === 'openapi' || format === 'gpt') {
         return Response.json(mcp.generateOpenAPISchema(baseUrl))
       }
-      if (format === 'gemini' || format === 'spark' || format === 'google') {
-        return Response.json(mcp.generateGeminiSchema())
-      }
       return Response.json(mcp.getServerInfo(baseUrl))
     },
 
@@ -267,10 +262,6 @@ export function createNextjsRoute(getMcp: () => Promise<DiscordMCPServer>) {
 
       try {
         const body = await req.json()
-        if (body?.functionCall || (body?.name && !body?.jsonrpc && !body?.method)) {
-          const response = await mcp.handleGeminiCall(body, apiKey)
-          return Response.json(response)
-        }
         const response = await mcp.handleRequest(body, apiKey)
         return Response.json(response)
       } catch (err: any) {
@@ -332,7 +323,10 @@ export function createNextjsSSERoute(getMcp: () => Promise<DiscordMCPServer>) {
       const stream = new ReadableStream({
         start(controller) {
           const encoder = new TextEncoder()
-          controller.enqueue(encoder.encode(`event: endpoint\ndata: ${baseUrl}?sessionId=${sessionId}\n\n`))
+          // Flush proxy/Cloudflare buffer with SSE comment
+          controller.enqueue(encoder.encode(`: ${' '.repeat(2048)}\n\n`))
+          const endpointUrl = apiKey ? `${baseUrl}?sessionId=${sessionId}&apiKey=${encodeURIComponent(apiKey)}` : `${baseUrl}?sessionId=${sessionId}`
+          controller.enqueue(encoder.encode(`event: endpoint\ndata: ${endpointUrl}\n\n`))
           controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n\n`))
 
           const keepAlive = setInterval(() => {

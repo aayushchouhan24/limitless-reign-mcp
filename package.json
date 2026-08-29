@@ -1,6 +1,6 @@
 {
   "name": "limitless-reign-mcp",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Turn any Discord.js bot into a full MCP server with 280+ tools. Supports Claude, ChatGPT, Cursor, Windsurf, and all MCP-compatible AI clients.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

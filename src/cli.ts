@@ -213,30 +213,6 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // Gemini Spark / Google AI Studio / Vertex AI endpoint (/gemini)
-  if (url.pathname === '/gemini' || url.pathname === '/gemini/execute') {
-    if (req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(mcp.generateGeminiSchema()))
-      return
-    }
-    if (req.method === 'POST') {
-      let body = ''
-      req.on('data', chunk => body += chunk)
-      req.on('end', async () => {
-        try {
-          const result = await mcp.handleGeminiCall(JSON.parse(body), apiKey)
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify(result))
-        } catch (e: any) {
-          res.writeHead(400, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: e.message }))
-        }
-      })
-      return
-    }
-  }
-
   // Health check endpoint
   if (url.pathname === '/health' || url.pathname === '/ping') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -244,15 +220,12 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // GET - server info, OpenAPI schema, or Gemini schema
+  // GET - server info or OpenAPI schema
   if (req.method === 'GET') {
     const format = url.searchParams.get('format')
     if (format === 'openapi' || format === 'gpt') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(mcp.generateOpenAPISchema(baseUrl)))
-    } else if (format === 'gemini' || format === 'spark' || format === 'google') {
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(mcp.generateGeminiSchema()))
     } else {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(mcp.getServerInfo(baseUrl)))
@@ -260,19 +233,13 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // POST - Streamable HTTP tool calls / JSON-RPC / Gemini calls
+  // POST - Streamable HTTP tool calls / JSON-RPC
   if (req.method === 'POST') {
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', async () => {
       try {
         const parsed = JSON.parse(body)
-        if (parsed?.functionCall || (parsed?.name && !parsed?.jsonrpc && !parsed?.method)) {
-          const result = await mcp.handleGeminiCall(parsed, apiKey)
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify(result))
-          return
-        }
         const result = await mcp.handleRequest(parsed, apiKey)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(result))
@@ -297,14 +264,6 @@ client.once('ready', () => {
 ✓ MCP Server running on http://localhost:${port}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Connect Gemini Spark (No Google OAuth required):
-  1. Tunnel to internet: cloudflared tunnel --url http://localhost:${port}
-  2. In Gemini / Gemini Spark Connected Apps, add URL:
-     https://<your-tunnel-url>/sse
-     or Streamable HTTP: https://<your-tunnel-url>/mcp
-  3. Or export Gemini Tools directly into Google AI Studio:
-     GET https://<your-tunnel-url>/gemini (or ?format=gemini)
 
 Connect Claude Desktop:
   Edit claude_desktop_config.json:
